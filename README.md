@@ -51,3 +51,8 @@ rejection of non-digit input is **not universal** (`experiments/ood_eval.md`: le
 ## Docs
 
 `docs/API.md`, `docs/TRD.md`, `docs/SECURITY.md`, `docs/OPERATIONS.md`, `docs/MATHEMATICS.md`, `docs/PERFORMANCE.md`, `docs/RULES.md`, `docs/PRD.md`.
+
+## License
+
+GPL-3.0-or-later. See [LICENSE](LICENSE).
+
