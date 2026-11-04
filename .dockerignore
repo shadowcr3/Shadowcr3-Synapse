@@ -1,0 +1,11 @@
+.git
+**/__pycache__
+**/node_modules
+tests
+tools
+docs
+dist
+experiments
+data/user_samples.jsonl
+models/candidates
+models/registry.json

@@ -1,0 +1,7 @@
+{
+  "name": "synapse-ui-tests",
+  "private": true,
+  "description": "Runs the real frontend in jsdom (with a real 2D canvas) against a live server.",
+  "scripts": { "test": "node ui.test.js" },
+  "devDependencies": { "canvas": "^3.2.3", "jsdom": "^27.4.0" }
+}

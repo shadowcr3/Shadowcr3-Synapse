@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+dist/
+# user data and locally trained candidates never belong in version control
+data/user_samples.jsonl
+models/candidates/
+models/registry.json

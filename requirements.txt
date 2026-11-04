@@ -1,0 +1,6 @@
+# Everything needed to train, evaluate, serve and run the tools.
+# Versions below are the ones this release was tested with; the ranges are what is expected to work.
+numpy>=1.26,<3        # tested: 2.4.4
+flask>=3.0,<4         # tested: 3.1.3
+waitress>=3.0,<4      # production WSGI server (pure Python); `--dev` falls back to Flask's server
+matplotlib>=3.8,<4    # charts in training reports and glyphs for the OOD tool; tested: 3.10.8

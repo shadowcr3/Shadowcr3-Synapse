@@ -1,0 +1,56 @@
+{
+  "model_sha256": "1bd8fa92fe9976c1d3412a70d7b45c23a10f3e25e9173923374c3dcfd6807130",
+  "run_id": "synapse_v1_seed42_20261104T042945Z",
+  "threshold": 0.953217625617981,
+  "samples": 1200,
+  "seed": 0,
+  "native_mnist_28x28": {
+    "n": 1200,
+    "accuracy": 0.9891666666666666,
+    "accept_rate": 0.9458333333333333,
+    "accuracy_on_accepted": 0.9991189427312775
+  },
+  "canvas_pipeline": {
+    "extra_stroke_width_0px": {
+      "n": 1200,
+      "accuracy": 0.9891666666666666,
+      "accept_rate": 0.9366666666666666,
+      "accuracy_on_accepted": 0.9991103202846975
+    },
+    "extra_stroke_width_4px": {
+      "n": 1200,
+      "accuracy": 0.9891666666666666,
+      "accept_rate": 0.94,
+      "accuracy_on_accepted": 0.999113475177305
+    },
+    "extra_stroke_width_8px": {
+      "n": 1200,
+      "accuracy": 0.9841666666666666,
+      "accept_rate": 0.9308333333333333,
+      "accuracy_on_accepted": 0.9973142345568488
+    },
+    "extra_stroke_width_12px": {
+      "n": 1200,
+      "accuracy": 0.9683333333333334,
+      "accept_rate": 0.8916666666666667,
+      "accuracy_on_accepted": 0.994392523364486
+    },
+    "extra_stroke_width_16px": {
+      "n": 1200,
+      "accuracy": 0.9458333333333333,
+      "accept_rate": 0.8366666666666667,
+      "accuracy_on_accepted": 0.9880478087649402
+    }
+  },
+  "js_vs_python": {
+    "n": 150,
+    "max_pixel_difference": 0,
+    "prediction_agreement": 1.0,
+    "js_accuracy": 0.9933333333333333,
+    "python_accuracy": 0.9933333333333333
+  },
+  "api_vs_direct": {
+    "n": 60,
+    "max_score_difference": 0.0
+  }
+}

@@ -1,0 +1,570 @@
+{
+  "model_sha256": "1bd8fa92fe9976c1d3412a70d7b45c23a10f3e25e9173923374c3dcfd6807130",
+  "run_id": "synapse_v1_seed42_20261104T042945Z",
+  "threshold": 0.953217625617981,
+  "samples_per_category": 300,
+  "seed": 0,
+  "categories": {
+    "valid digits 1-9 (reference)": {
+      "n": 300,
+      "blocked_before_model": 0,
+      "rejected_by_model": 21,
+      "false_accepts": 279,
+      "reject_rate": 0.07,
+      "accept_rate": 0.93,
+      "auroc_vs_valid": null
+    },
+    "digit 0 (MNIST)": {
+      "n": 300,
+      "blocked_before_model": 0,
+      "rejected_by_model": 264,
+      "false_accepts": 36,
+      "reject_rate": 0.88,
+      "accept_rate": 0.12,
+      "auroc_vs_valid": 0.9664888888888888
+    },
+    "blank canvas": {
+      "n": 20,
+      "blocked_before_model": 20,
+      "rejected_by_model": 0,
+      "false_accepts": 0,
+      "reject_rate": 1.0,
+      "accept_rate": 0.0,
+      "auroc_vs_valid": null
+    },
+    "tiny mark / dot": {
+      "n": 300,
+      "blocked_before_model": 300,
+      "rejected_by_model": 0,
+      "false_accepts": 0,
+      "reject_rate": 1.0,
+      "accept_rate": 0.0,
+      "auroc_vs_valid": null
+    },
+    "random scribbles": {
+      "n": 300,
+      "blocked_before_model": 0,
+      "rejected_by_model": 215,
+      "false_accepts": 85,
+      "reject_rate": 0.7166666666666667,
+      "accept_rate": 0.2833333333333333,
+      "auroc_vs_valid": 0.9204055555555556
+    },
+    "geometric shapes": {
+      "n": 300,
+      "blocked_before_model": 0,
+      "rejected_by_model": 224,
+      "false_accepts": 76,
+      "reject_rate": 0.7466666666666667,
+      "accept_rate": 0.25333333333333335,
+      "auroc_vs_valid": 0.9386555555555556
+    },
+    "speckle noise": {
+      "n": 300,
+      "blocked_before_model": 0,
+      "rejected_by_model": 300,
+      "false_accepts": 0,
+      "reject_rate": 1.0,
+      "accept_rate": 0.0,
+      "auroc_vs_valid": 0.9942777777777778
+    },
+    "letters A-Z a-z (6 fonts)": {
+      "n": 312,
+      "blocked_before_model": 0,
+      "rejected_by_model": 147,
+      "false_accepts": 165,
+      "reject_rate": 0.47115384615384615,
+      "accept_rate": 0.5288461538461539,
+      "auroc_vs_valid": 0.833440170940171
+    },
+    "symbols (+ - = # @ % & ? ! ...)": {
+      "n": 162,
+      "blocked_before_model": 0,
+      "rejected_by_model": 84,
+      "false_accepts": 78,
+      "reject_rate": 0.5185185185185185,
+      "accept_rate": 0.48148148148148145,
+      "auroc_vs_valid": 0.8195370370370371
+    }
+  },
+  "per_character": {
+    "letters": [
+      {
+        "char": "C",
+        "accepted_in_fonts": 6,
+        "of": 6,
+        "mostly_read_as": 6
+      },
+      {
+        "char": "S",
+        "accepted_in_fonts": 6,
+        "of": 6,
+        "mostly_read_as": 5
+      },
+      {
+        "char": "j",
+        "accepted_in_fonts": 6,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "B",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "G",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 6
+      },
+      {
+        "char": "H",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 4
+      },
+      {
+        "char": "I",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "J",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "R",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "V",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 4
+      },
+      {
+        "char": "Y",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 4
+      },
+      {
+        "char": "Z",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 2
+      },
+      {
+        "char": "c",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 6
+      },
+      {
+        "char": "i",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "s",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 5
+      },
+      {
+        "char": "v",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 4
+      },
+      {
+        "char": "K",
+        "accepted_in_fonts": 4,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "Q",
+        "accepted_in_fonts": 4,
+        "of": 6,
+        "mostly_read_as": 9
+      },
+      {
+        "char": "a",
+        "accepted_in_fonts": 4,
+        "of": 6,
+        "mostly_read_as": 2
+      },
+      {
+        "char": "e",
+        "accepted_in_fonts": 4,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "l",
+        "accepted_in_fonts": 4,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "t",
+        "accepted_in_fonts": 4,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "y",
+        "accepted_in_fonts": 4,
+        "of": 6,
+        "mostly_read_as": 4
+      },
+      {
+        "char": "z",
+        "accepted_in_fonts": 4,
+        "of": 6,
+        "mostly_read_as": 2
+      },
+      {
+        "char": "E",
+        "accepted_in_fonts": 3,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "M",
+        "accepted_in_fonts": 3,
+        "of": 6,
+        "mostly_read_as": 4
+      },
+      {
+        "char": "P",
+        "accepted_in_fonts": 3,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "T",
+        "accepted_in_fonts": 3,
+        "of": 6,
+        "mostly_read_as": 7
+      },
+      {
+        "char": "W",
+        "accepted_in_fonts": 3,
+        "of": 6,
+        "mostly_read_as": 4
+      },
+      {
+        "char": "b",
+        "accepted_in_fonts": 3,
+        "of": 6,
+        "mostly_read_as": 6
+      },
+      {
+        "char": "d",
+        "accepted_in_fonts": 3,
+        "of": 6,
+        "mostly_read_as": 4
+      },
+      {
+        "char": "g",
+        "accepted_in_fonts": 3,
+        "of": 6,
+        "mostly_read_as": 9
+      },
+      {
+        "char": "o",
+        "accepted_in_fonts": 3,
+        "of": 6,
+        "mostly_read_as": 9
+      },
+      {
+        "char": "q",
+        "accepted_in_fonts": 3,
+        "of": 6,
+        "mostly_read_as": 9
+      },
+      {
+        "char": "w",
+        "accepted_in_fonts": 3,
+        "of": 6,
+        "mostly_read_as": 4
+      },
+      {
+        "char": "F",
+        "accepted_in_fonts": 2,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "O",
+        "accepted_in_fonts": 2,
+        "of": 6,
+        "mostly_read_as": 9
+      },
+      {
+        "char": "X",
+        "accepted_in_fonts": 2,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "n",
+        "accepted_in_fonts": 2,
+        "of": 6,
+        "mostly_read_as": 7
+      },
+      {
+        "char": "u",
+        "accepted_in_fonts": 2,
+        "of": 6,
+        "mostly_read_as": 4
+      },
+      {
+        "char": "x",
+        "accepted_in_fonts": 2,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "L",
+        "accepted_in_fonts": 1,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "N",
+        "accepted_in_fonts": 1,
+        "of": 6,
+        "mostly_read_as": 4
+      },
+      {
+        "char": "U",
+        "accepted_in_fonts": 1,
+        "of": 6,
+        "mostly_read_as": 6
+      },
+      {
+        "char": "k",
+        "accepted_in_fonts": 1,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "r",
+        "accepted_in_fonts": 1,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "A",
+        "accepted_in_fonts": 0,
+        "of": 6,
+        "mostly_read_as": null
+      },
+      {
+        "char": "D",
+        "accepted_in_fonts": 0,
+        "of": 6,
+        "mostly_read_as": null
+      },
+      {
+        "char": "f",
+        "accepted_in_fonts": 0,
+        "of": 6,
+        "mostly_read_as": null
+      },
+      {
+        "char": "h",
+        "accepted_in_fonts": 0,
+        "of": 6,
+        "mostly_read_as": null
+      },
+      {
+        "char": "m",
+        "accepted_in_fonts": 0,
+        "of": 6,
+        "mostly_read_as": null
+      },
+      {
+        "char": "p",
+        "accepted_in_fonts": 0,
+        "of": 6,
+        "mostly_read_as": null
+      }
+    ],
+    "symbols": [
+      {
+        "char": "/",
+        "accepted_in_fonts": 6,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "\\",
+        "accepted_in_fonts": 6,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "(",
+        "accepted_in_fonts": 6,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": ")",
+        "accepted_in_fonts": 6,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "[",
+        "accepted_in_fonts": 6,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "]",
+        "accepted_in_fonts": 6,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "{",
+        "accepted_in_fonts": 6,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "|",
+        "accepted_in_fonts": 6,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "?",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 7
+      },
+      {
+        "char": "!",
+        "accepted_in_fonts": 5,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": ";",
+        "accepted_in_fonts": 4,
+        "of": 6,
+        "mostly_read_as": 2
+      },
+      {
+        "char": ":",
+        "accepted_in_fonts": 3,
+        "of": 6,
+        "mostly_read_as": 2
+      },
+      {
+        "char": "-",
+        "accepted_in_fonts": 2,
+        "of": 6,
+        "mostly_read_as": 7
+      },
+      {
+        "char": "&",
+        "accepted_in_fonts": 2,
+        "of": 6,
+        "mostly_read_as": 6
+      },
+      {
+        "char": "~",
+        "accepted_in_fonts": 2,
+        "of": 6,
+        "mostly_read_as": 2
+      },
+      {
+        "char": ">",
+        "accepted_in_fonts": 2,
+        "of": 6,
+        "mostly_read_as": 2
+      },
+      {
+        "char": "@",
+        "accepted_in_fonts": 1,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "%",
+        "accepted_in_fonts": 1,
+        "of": 6,
+        "mostly_read_as": 8
+      },
+      {
+        "char": "$",
+        "accepted_in_fonts": 1,
+        "of": 6,
+        "mostly_read_as": 5
+      },
+      {
+        "char": "*",
+        "accepted_in_fonts": 1,
+        "of": 6,
+        "mostly_read_as": 4
+      },
+      {
+        "char": "}",
+        "accepted_in_fonts": 1,
+        "of": 6,
+        "mostly_read_as": 1
+      },
+      {
+        "char": "+",
+        "accepted_in_fonts": 0,
+        "of": 6,
+        "mostly_read_as": null
+      },
+      {
+        "char": "=",
+        "accepted_in_fonts": 0,
+        "of": 6,
+        "mostly_read_as": null
+      },
+      {
+        "char": "#",
+        "accepted_in_fonts": 0,
+        "of": 6,
+        "mostly_read_as": null
+      },
+      {
+        "char": "<",
+        "accepted_in_fonts": 0,
+        "of": 6,
+        "mostly_read_as": null
+      },
+      {
+        "char": "^",
+        "accepted_in_fonts": 0,
+        "of": 6,
+        "mostly_read_as": null
+      },
+      {
+        "char": "_",
+        "accepted_in_fonts": 0,
+        "of": 6,
+        "mostly_read_as": null
+      }
+    ]
+  }
+}
