@@ -54,5 +54,5 @@ rejection of non-digit input is **not universal** (`experiments/ood_eval.md`: le
 
 ## License
 
-GPL-3.0-or-later. See [LICENSE](LICENSE).
+GPL-3.0
 
