@@ -130,3 +130,4 @@
   function init() { $('btn-rollback').addEventListener('click', rollback); }
   S.model = { init, refresh };
 })(window.Synapse = window.Synapse || {});
+

@@ -1,9 +1,3 @@
-"""MNIST loading with integrity checks, class filtering, and stratified splitting.
-
-Images are kept as uint8 (N, 784) in memory and converted to float64 in [0, 1] per batch
-with normalize_pixels(); this keeps memory small and the conversion exact (k / 255).
-"""
-
 from __future__ import annotations
 
 import gzip
@@ -18,14 +12,12 @@ from pathlib import Path
 
 import numpy as np
 
-# SHA-256 of the four canonical MNIST archives.
 MNIST_FILES = {
     "train_images": ("train-images-idx3-ubyte.gz", "440fcabf73cc546fa21475e81ea370265605f56be210a4024d2ca8f203523609"),
     "train_labels": ("train-labels-idx1-ubyte.gz", "3552534a0a558bbed6aed32b30c495cca23d567ec52cac8be1a0730e8010255c"),
     "test_images": ("t10k-images-idx3-ubyte.gz", "8d422c7b0a1c1c79245a5bcf07fe86e33eeafee792b84584aec276f5a2dbc4e6"),
     "test_labels": ("t10k-labels-idx1-ubyte.gz", "f7ae60f92e00ec6debd23a6088c31dbd2371eca3ffa0defaefb259924204aec6"),
 }
-# Every download is verified against the hashes above, so the mirror need not be trusted.
 MIRRORS = (
     "https://raw.githubusercontent.com/golbin/TensorFlow-MNIST/master/mnist/data/",
     "https://ossci-datasets.s3.amazonaws.com/mnist/",
@@ -43,7 +35,6 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
-
 
 def read_idx(path: Path) -> np.ndarray:
     """Parse a gzip-compressed IDX file of unsigned bytes, validating the header."""
@@ -148,8 +139,8 @@ class Dataset:
     y_val: np.ndarray
     X_test: np.ndarray
     y_test: np.ndarray
-    X_ood_val: np.ndarray    # excluded digits (e.g. 0) from the training pool: reject-rule tuning only
-    X_ood_test: np.ndarray   # excluded digits from the official test set: final reporting only
+    X_ood_val: np.ndarray    
+    X_ood_test: np.ndarray
     classes: tuple
     info: dict = field(default_factory=dict)
 
@@ -172,13 +163,12 @@ def prepare_data(data_cfg: dict, split_seed, raw: dict | None = None) -> Dataset
     x_tr, y_tr = raw["x_train"][keep_tr], y_tr_all[keep_tr]
     x_te, y_te = raw["x_test"][keep_te], y_te_all[keep_te]
 
-    rng = np.random.default_rng(split_seed)   # fixed data.split_seed => identical val set across runs
+    rng = np.random.default_rng(split_seed)
     tr_idx, va_idx = stratified_split(y_tr, data_cfg["val_fraction"], rng)
 
     def flat(x):
         return np.ascontiguousarray(x.reshape(x.shape[0], N_FEATURES))
 
-    # OOD pools
     ood_pool_mask = np.isin(y_tr_all, excluded)
     x_ood_pool = raw["x_train"][ood_pool_mask]
     n_ood_val = int(round(len(x_ood_pool) * data_cfg["val_fraction"]))
@@ -203,3 +193,4 @@ def prepare_data(data_cfg: dict, split_seed, raw: dict | None = None) -> Dataset
         "split_sha256": split_hash, "file_sha256": raw.get("file_sha256", {}),
     }
     return ds
+

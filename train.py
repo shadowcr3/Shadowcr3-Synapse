@@ -1,15 +1,3 @@
-#!/usr/bin/env python3
-"""Train and evaluate Synapse.
-
-    python train.py                                   # configs/default.json
-    python train.py --set training.epochs=2           # any config value, dotted path
-    python train.py --skip-test --out-root /tmp/try   # tuning run: never touches the test set
-
-Pipeline: config -> data -> gradient pre-flight (float64) -> train -> reject threshold from
-validation -> test set evaluated once -> model + one self-contained run directory
-(log.json, report.md, charts/). Every reported number is measured by this script.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -124,8 +112,6 @@ def main(argv=None) -> int:
     history = train(net, make_optimizer(tr), ds.X_train, ds.y_train, ds.X_val, ds.y_val,
                     settings=make_settings(tr), shuffle_seed=shuffle_ss, augment_seed=augment_ss)
     print(f"restored parameters from epoch {history['best_epoch']} (best {tr['selection_metric']})")
-
-    # Validation-only decisions first; the test set (if used at all) is touched once, after this.
     val = evaluator.evaluate_classifier(net, ds.X_val, ds.y_val, ds.classes)
     reject_cfg, reject_val, reject_test, test = cfg["reject"], None, None, None
     if reject_cfg["enabled"]:
@@ -171,7 +157,6 @@ def main(argv=None) -> int:
     print("\n" + report)
     print(f"saved: {npz_path}, {json_path}, {run_dir}/ (log.json, report.md, {len(charts)} chart(s))")
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

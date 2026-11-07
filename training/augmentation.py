@@ -103,3 +103,4 @@ def augment_batch(x_uint8: np.ndarray, rng: np.random.Generator, cfg: AugmentCon
                 [sub, p[:, :-2, 1:-1], p[:, 2:, 1:-1], p[:, 1:-1, :-2], p[:, 1:-1, 2:]])
     np.clip(out, 0.0, 1.0, out=out)
     return out.reshape(b, SIDE * SIDE).astype(dtype, copy=False)
+
