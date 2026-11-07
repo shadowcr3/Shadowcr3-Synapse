@@ -1,7 +1,3 @@
-"""Inference engine: loads a trained model and turns 784 validated pixels into a prediction.
-
-Independent of the training pipeline: depends only on `neural_network` and NumPy.
-"""
 
 from __future__ import annotations
 
@@ -52,7 +48,6 @@ class Predictor:
         return cls(network, metadata, version_id or name)
 
     def predict(self, pixels: np.ndarray) -> dict:
-        """pixels: validated uint8 array (784,). Returns a JSON-serialisable dict."""
         t0 = time.perf_counter()
         probs = softmax(self.network.predict_logits(to_model_input(pixels)))[0]
         best = int(np.argmax(probs))
@@ -70,7 +65,6 @@ class Predictor:
             "processing_ms": elapsed_ms,
         }
 
-    # ----- metadata views exposed by the API (whitelisted; no file paths) -----------
     def info(self) -> dict:
         m = self.metadata
         ev = m.get("evaluation", {})
@@ -90,8 +84,6 @@ class Predictor:
         return self.metadata.get("metrics_report")
 
     def trace(self, pixels: np.ndarray, label_digit: int | None = None, k_edges: int = 80) -> dict:
-        """Prediction plus per-neuron activations, strongest edges and (given a label) the
-        backward error signals. label_digit is a digit, not a class index."""
         target = None
         if label_digit is not None:
             if label_digit not in self.digits:
@@ -102,7 +94,6 @@ class Predictor:
         return out
 
     def weights(self, layer: int) -> dict:
-        """Layer `layer` (0 = first hidden) as int8 + per-neuron scale, plus biases."""
         layers = self.network.layers
         if not 0 <= layer < len(layers):
             raise ValueError("no such layer")

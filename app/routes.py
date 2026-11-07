@@ -1,4 +1,3 @@
-"""HTTP routes. Thin: validation lives in preprocessing/jobs, logic in inference/models."""
 
 from __future__ import annotations
 
@@ -8,6 +7,7 @@ from .feedback import FeedbackError, FeedbackFull
 from .jobs import DataUnavailable, JobBusy, JobError
 from .models import StoreError
 from .preprocessing import InputError, parse_pixels
+from .version import __version__
 
 bp = Blueprint("synapse", __name__)
 
@@ -23,7 +23,6 @@ def error_response(status: int, code: str, message: str, **extra):
 
 
 def _json_body():
-    """(payload, error_response). Requires application/json; never raises."""
     if not request.is_json:
         return None, error_response(415, "unsupported_media_type", "Content-Type must be application/json")
     payload = request.get_json(silent=True)
@@ -39,7 +38,6 @@ def _pixels_from(payload):
         return None, error_response(422 if exc.code == "blank_input" else 400, exc.code, str(exc))
 
 
-# ----- frontend --------------------------------------------------------------------------
 @bp.get("/")
 def index():
     return send_from_directory(_ext()["frontend_dir"], "index.html")
@@ -52,19 +50,17 @@ def static_file(name: str):
     return send_from_directory(_ext()["frontend_dir"], name)
 
 
-# ----- service ---------------------------------------------------------------------------
 @bp.get("/health")
 def health():
     import time
     ext = _ext()
     info = ext["store"].predictor.info()
-    return jsonify({"status": "ok", "model_loaded": True, "active_model": ext["store"].active_id,
+    return jsonify({"status": "ok", "app_version": __version__, "model_loaded": True, "active_model": ext["store"].active_id,
                     "model": {"name": info["name"], "version": info["version"]},
                     "read_only": ext["read_only"], "training_busy": ext["jobs"].status()["busy"],
                     "uptime_s": round(time.monotonic() - ext["started"], 1)})
 
 
-# ----- model -----------------------------------------------------------------------------
 @bp.get("/model/info")
 def model_info():
     return jsonify(_ext()["store"].predictor.info())
@@ -80,7 +76,6 @@ def model_metrics():
 
 @bp.get("/model/ood")
 def model_ood():
-    """Measured behaviour on non-digit input, only if the report belongs to the ACTIVE model."""
     import json
     pred = _ext()["store"].predictor
     path = _ext()["experiments_dir"] / "ood_eval.json"
@@ -138,7 +133,6 @@ def model_delete(cid: str):
     return jsonify({"deleted": cid})
 
 
-# ----- inference -------------------------------------------------------------------------
 @bp.post("/predict")
 def predict():
     payload, err = _json_body()
@@ -178,7 +172,6 @@ def trace():
     return jsonify({"prediction": predictor.predict(pixels), "trace": tr, "model_id": _ext()["store"].active_id})
 
 
-# ----- feedback (user-labelled drawings) ---------------------------------------------------
 @bp.post("/feedback")
 def feedback_add():
     payload, err = _json_body()
@@ -215,7 +208,6 @@ def feedback_clear():
     return jsonify({"deleted": _ext()["feedback"].clear()})
 
 
-# ----- jobs ------------------------------------------------------------------------------
 @bp.post("/jobs/<kind>")
 def job_start(kind: str):
     payload, err = _json_body()

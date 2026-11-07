@@ -1,14 +1,3 @@
-"""Background training jobs with a live, poll-friendly event stream.
-
-One job runs at a time on a worker thread. Jobs train a *private* network; the served model is
-only ever replaced through ModelStore's validation gate. Kinds:
-
-  train     train a new network from scratch (chosen hidden sizes) -> candidate model
-  finetune  continue from the active model on the user's saved drawings + a replay of MNIST
-  sweep     train several hidden-layer sizes on a subset and compare them (no model saved)
-
-Safety rails: parameter/epoch/size caps, a wall-clock limit, cancellation, no test-set access.
-"""
 
 from __future__ import annotations
 
@@ -23,6 +12,7 @@ from datetime import datetime, timezone
 import numpy as np
 
 from neural_network import Adam, Network
+from .feedback import MIN_TOTAL as MIN_USER_SAMPLES, holdout_mask, readiness
 from neural_network.introspection import quantize_rows_int8, trace
 from training import evaluator
 from training.augmentation import AugmentConfig
@@ -37,20 +27,19 @@ MAX_PARAMS = 1_500_000
 MAX_HIDDEN_LAYERS = 3
 HIDDEN_MIN, HIDDEN_MAX = 2, 512
 MAX_ARCHS = 8
-MIN_USER_SAMPLES = 5
 N_TILES = 24
 
 
 class JobError(ValueError):
-    """Invalid job parameters (HTTP 400)."""
+    pass
 
 
 class JobBusy(RuntimeError):
-    """A job is already running (HTTP 409)."""
+    pass
 
 
 class DataUnavailable(RuntimeError):
-    """The training data cannot be loaded (HTTP 503)."""
+    pass
 
 
 def _num(params, name, lo, hi, default, kind=float):
@@ -141,7 +130,6 @@ class JobManager:
         self._t0 = time.monotonic()
         self._progress: dict = {}
 
-    # ----- events / status ------------------------------------------------------------
     def _emit(self, type_: str, **data) -> None:
         with self._lock:
             self._seq += 1
@@ -159,7 +147,6 @@ class JobManager:
     def _data(self):
         return self._data_provider()
 
-    # ----- shared pieces -------------------------------------------------------------
     @staticmethod
     def tiles(net: Network, n: int = N_TILES) -> dict:
         q, scale = quantize_rows_int8(net.layers[0].W[:n])
@@ -178,7 +165,7 @@ class JobManager:
         d["enabled"] = enabled
         return AugmentConfig.from_dict(d)
 
-    def _finalize_candidate(self, net, ds, history, *, source, parent, params, started) -> dict:
+    def _finalize_candidate(self, net, ds, history, *, source, parent, params, started, extra_eval=None) -> dict:
         classes = list(ds.classes)
         val = evaluator.evaluate_classifier(net, ds.X_val, ds.y_val, classes)
         rej_cfg = self.cfg["reject"]
@@ -202,7 +189,8 @@ class JobManager:
             "best_epoch": history["best_epoch"], "dataset": ds.info,
             "evaluation": {"validation_accuracy": val["accuracy"], "validation_loss": val["loss"],
                            "test_accuracy": None, "test_macro_f1": None, "test_ece": None, "test_loss": None,
-                           "latency": latency, "reject_validation": reject, "reject_test": None},
+                           "latency": latency, "reject_validation": reject, "reject_test": None,
+                           **(extra_eval or {})},
             "metrics_report": metrics_report(history, val, None, reject, None, latency, ds),
         }
         self.store.save_candidate(net, meta, cid)
@@ -210,7 +198,6 @@ class JobManager:
                 "parameter_count": net.num_parameters(), "layer_sizes": list(net.layer_sizes),
                 "best_epoch": history["best_epoch"], "seconds": round(time.monotonic() - started, 1)}
 
-    # ----- starting jobs -------------------------------------------------------------
     def start(self, kind: str, params: dict) -> dict:
         if not isinstance(params, dict):
             raise JobError("parameters must be a JSON object")
@@ -222,7 +209,7 @@ class JobManager:
         with self._lock:
             if self._thread and self._thread.is_alive():
                 raise JobBusy("a job is already running")
-            ds = self._data()                                  # may raise DataUnavailable
+            ds = self._data()
             validate, run = runners[kind]
             params = validate(params, ds)
             self._cancel.clear()
@@ -257,7 +244,7 @@ class JobManager:
             state = "cancelled" if (self._cancel.is_set() or self._timed_out) else "done"
             if state == "cancelled":
                 result = {"reason": "time limit reached" if self._timed_out else "cancelled by user"}
-        except Exception as exc:           # surfaced to the UI; never crashes the server
+        except Exception as exc:
             log.exception("job failed")
             state, result = "failed", None
             job["error"] = str(exc) or exc.__class__.__name__
@@ -265,7 +252,6 @@ class JobManager:
             job.update(state=state, result=result, finished_utc=datetime.now(timezone.utc).isoformat())
         self._emit("job_finished", state=state, result=result, error=job["error"])
 
-    # ----- validation ------------------------------------------------------------------
     def _validate_train(self, p, ds) -> dict:
         _unknown(p, {"hidden_sizes", "epochs", "batch_size", "learning_rate", "augmentation",
                      "weight_decay", "seed", "subset"})
@@ -280,9 +266,10 @@ class JobManager:
 
     def _validate_finetune(self, p, ds) -> dict:
         _unknown(p, {"epochs", "learning_rate", "auto_promote"})
-        n = len(self.feedback.arrays(ds.classes)[1])
-        if n < MIN_USER_SAMPLES:
-            raise JobError(f"need at least {MIN_USER_SAMPLES} saved drawings to fine-tune (have {n})")
+        _, y, ids = self.feedback.arrays(ds.classes)
+        ready = readiness(ids, y)
+        if not ready["ready"]:
+            raise JobError("not enough saved drawings to fine-tune safely: " + "; ".join(ready["reasons"]))
         return {"epochs": _num(p, "epochs", 1, 20, 4, int),
                 "learning_rate": _num(p, "learning_rate", 1e-6, 1e-2, 3e-4),
                 "auto_promote": _bool(p, "auto_promote", True)}
@@ -299,7 +286,6 @@ class JobManager:
                 "learning_rate": _num(p, "learning_rate", 1e-5, 0.1, 1e-3),
                 "augmentation": _bool(p, "augmentation", False)}
 
-    # ----- runners ---------------------------------------------------------------------
     def _settings(self, epochs, batch, lr, augment, schedule="cosine") -> TrainSettings:
         return TrainSettings(epochs=epochs, batch_size=batch, learning_rate=lr, lr_schedule=schedule,
                              augment=self._augment(augment), prefetch=True)
@@ -330,12 +316,12 @@ class JobManager:
     def _run_finetune(self, ds, p, started) -> dict:
         active, parent = self.store.predictor, self.store.active_id
         Xu, yu, ids = self.feedback.arrays(ds.classes)
-        hold = np.array([int(i, 16) % 5 == 0 for i in ids]) if len(ids) >= 10 else np.zeros(len(ids), bool)
+        hold = holdout_mask(ids, yu)
         Xu_tr, yu_tr, Xu_va, yu_va = Xu[~hold], yu[~hold], Xu[hold], yu[hold]
 
         net = Network(active.network.layer_sizes, seed=0, dtype=active.network.dtype)
         net.set_state(active.network.get_state())
-        user_before = evaluator.evaluate_loss_accuracy(net, Xu_va, yu_va)[1] if len(yu_va) else None
+        user_before = evaluator.evaluate_loss_accuracy(net, Xu_va, yu_va)[1]
         _, mnist_before = evaluator.evaluate_loss_accuracy(net, ds.X_val, ds.y_val)
 
         rng = np.random.default_rng(0)
@@ -355,17 +341,21 @@ class JobManager:
                         shuffle_seed=1, augment_seed=2, hooks=hooks, log=lambda *_: None)
         if history["cancelled"]:
             return {}
-        user_after = evaluator.evaluate_loss_accuracy(net, Xu_va, yu_va)[1] if len(yu_va) else None
+        user_after = evaluator.evaluate_loss_accuracy(net, Xu_va, yu_va)[1]
         _, mnist_after = evaluator.evaluate_loss_accuracy(net, ds.X_val, ds.y_val)
-        result = self._finalize_candidate(net, ds, history, source="ui-finetune", parent=parent, params=p, started=started)
+        holdout = {"n": int(len(yu_va)), "digits": int(len(np.unique(yu_va))),
+                   "accuracy_before": user_before, "accuracy_after": user_after,
+                   "per_digit_n": {str(ds.classes[int(c)]): int((yu_va == c).sum()) for c in np.unique(yu_va)}}
+        result = self._finalize_candidate(net, ds, history, source="ui-finetune", parent=parent, params=p,
+                                          started=started, extra_eval={"user_holdout": holdout})
         cid = result["candidate_id"]
         result.update(user_samples=int(len(yu_tr)), user_holdout=int(len(yu_va)),
                       user_holdout_accuracy_before=user_before, user_holdout_accuracy_after=user_after,
                       mnist_validation_accuracy_before=mnist_before, mnist_validation_accuracy_after=mnist_after)
-        gate = self.store.evaluate_gate(cid, self.gate_tolerance, user_before, user_after)
+        gate = self.store.evaluate_gate(cid, self.gate_tolerance)
         result["gate"], result["promoted"] = gate, False
         if p["auto_promote"] and gate["passed"]:
-            result["gate"] = self.store.promote(cid, self.gate_tolerance, user_before, user_after)
+            result["gate"] = self.store.promote(cid, self.gate_tolerance)
             result["promoted"] = result["gate"]["passed"]
         return result
 

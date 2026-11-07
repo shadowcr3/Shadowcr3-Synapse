@@ -1,4 +1,3 @@
-"""Shared fixtures: a synthetic 9-class dataset and a tiny trained 'release' model."""
 
 from __future__ import annotations
 
@@ -14,7 +13,6 @@ CLASSES = tuple(range(1, 10))
 
 
 def _images(n_per_class: int, seed: int):
-    """Class c lights its own block of pixels; plus low-level noise."""
     rng = np.random.default_rng(seed)
     X = rng.integers(0, 40, (n_per_class * 9, 784)).astype(np.uint8)
     y = np.repeat(np.arange(9), n_per_class)
@@ -37,7 +35,6 @@ def synthetic_dataset(seed: int = 0) -> Dataset:
 
 
 def make_release(model_dir, ds: Dataset, hidden=(24,), epochs: int = 6, name: str = "synapse_v1", seed: int = 0):
-    """Train a tiny network and save it with the metadata the app expects."""
     net = Network([784, *hidden, 9], seed=seed, dtype="float32")
     hist = train(net, Adam(0.003), ds.X_train, ds.y_train, ds.X_val, ds.y_val,
                  settings=TrainSettings(epochs=epochs, batch_size=32, learning_rate=0.003, prefetch=False),
@@ -62,7 +59,6 @@ def make_release(model_dir, ds: Dataset, hidden=(24,), epochs: int = 6, name: st
 
 
 def class_pixels(c: int, rng=None) -> list[int]:
-    """A 784-int payload that the synthetic model recognises as class index c (digit c+1)."""
     rng = rng or np.random.default_rng(c)
     px = rng.integers(0, 30, 784)
     px[c * 80:(c + 1) * 80] = rng.integers(180, 256, 80)

@@ -1,10 +1,3 @@
-"""Read-only inspection of a network for visualisation: per-neuron activations, backward
-error signals, and the strongest connections. Never mutates the network.
-
-Forward edge value   (src i -> dst j):  W[j, i] * a_src[i]    (how much i pushed j)
-Backward edge value  (dst j -> src i):  W[j, i] * delta_dst[j] (how much error j sent to i)
-where delta = dL/dZ for one sample (the (P - Y) signal for the output layer).
-"""
 
 from __future__ import annotations
 
@@ -17,13 +10,11 @@ LAYER_NAMES = ("hidden1", "hidden2", "hidden3")
 
 
 def layer_names(network) -> list[str]:
-    """Names for layers 1..L: hidden1..hiddenK then output."""
     n_hidden = len(network.layers) - 1
     return [f"hidden{i + 1}" for i in range(n_hidden)] + ["output"]
 
 
 def _top_edges(contrib: np.ndarray, k: int) -> list[list]:
-    """contrib: (n_dst, n_src). Returns top-k [src, dst, value] by |value|."""
     if k <= 0:
         return []
     flat = np.abs(contrib).ravel()
@@ -35,7 +26,6 @@ def _top_edges(contrib: np.ndarray, k: int) -> list[list]:
 
 
 def trace(network, pixels01, target: int | None = None, k_edges: int = 80) -> dict:
-    """pixels01: (784,) in [0, 1]. Optionally a target class index for the backward pass."""
     x = np.asarray(pixels01, dtype=np.float64).reshape(1, -1)
     if x.shape[1] != network.layer_sizes[0]:
         raise ValueError(f"expected {network.layer_sizes[0]} inputs")
@@ -62,7 +52,6 @@ def trace(network, pixels01, target: int | None = None, k_edges: int = 80) -> di
     if target is not None:
         if not 0 <= target < W[-1].shape[0]:
             raise ValueError("target out of range")
-        # Backward pass on this one sample (N = 1): delta_out = P - Y, then the chain rule.
         loss, d_logits = softmax_cross_entropy(pres[-1], np.array([target]))
         deltas = [None] * len(W)
         deltas[-1] = d_logits[0]
@@ -80,7 +69,6 @@ def trace(network, pixels01, target: int | None = None, k_edges: int = 80) -> di
 
 
 def quantize_rows_int8(W: np.ndarray):
-    """Per-row symmetric int8 quantisation for compact transfer: W ~= q * scale[:, None]."""
     W = np.asarray(W, dtype=np.float64)
     scale = np.maximum(np.abs(W).max(axis=1), 1e-12) / 127.0
     q = np.clip(np.rint(W / scale[:, None]), -127, 127).astype(np.int8)

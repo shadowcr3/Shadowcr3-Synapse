@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""Measure how the release model handles input that is NOT a digit 1-9.
-
-Rejecting the held-out digit 0 does not show the model rejects letters, symbols, scribbles or
-a blank canvas, so each category is generated as a 280x280 canvas, pushed through the same
-normalisation the browser uses, and classified. A drawing can be stopped before the network
-(blank / too small) or by the model's reject threshold; anything else is a FALSE ACCEPT.
-
-    python tools/evaluate_ood.py [--model-dir models] [--samples 300]
-Writes experiments/ood_eval.json and .md (bound to the model's SHA-256).
-"""
 
 from __future__ import annotations
 
@@ -22,19 +12,18 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.inference import Predictor                      # noqa: E402
-from app.preprocessing import BlankInputError, mnist_style_normalize  # noqa: E402
-from neural_network.activations import softmax            # noqa: E402
-from tools import canvas_sim as sim                       # noqa: E402
-from training.dataset import load_mnist                   # noqa: E402
-from training.metrics import roc_auc                      # noqa: E402
+from app.inference import Predictor
+from app.preprocessing import BlankInputError, mnist_style_normalize
+from neural_network.activations import softmax
+from tools import canvas_sim as sim
+from training.dataset import load_mnist
+from training.metrics import roc_auc
 
 LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 SYMBOLS = list("+-=#@%&?!$*~/\\()[]{}<>^_:;|")
 
 
 def classify(pred: Predictor, canvases):
-    """-> list of (blocked, confidence, accepted, top_digit)."""
     kept, out = [], [None] * len(canvases)
     for i, c in enumerate(canvases):
         try:
@@ -60,7 +49,8 @@ def summarise(results) -> dict:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(description="Measure how the release model handles input that is not a digit 1-9.", epilog="writes experiments/ood_eval.json and ood_eval.md",
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--model-dir", default="models")
     ap.add_argument("--model-name", default="synapse_v1")
     ap.add_argument("--data-dir", default="data/mnist")
@@ -101,7 +91,6 @@ def main(argv=None) -> int:
         confs = np.array([x[1] for x in r if x[1] is not None])
         summary[name]["auroc_vs_valid"] = (roc_auc(ref_conf, confs) if len(confs) >= 5 and name != "valid digits 1-9 (reference)" else None)
 
-    # which letters / symbols slip through (accepted in the majority of fonts)?
     per_char = {}
     for (name, chars) in (("letters", LETTERS), ("symbols", SYMBOLS)):
         res = results["letters A-Z a-z (6 fonts)" if name == "letters" else "symbols (+ - = # @ % & ? ! ...)"]

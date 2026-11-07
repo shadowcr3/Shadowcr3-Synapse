@@ -1,4 +1,3 @@
-/* Tiny DOM + HTTP helpers shared by the UI modules. Text is always set via textContent. */
 (function (S) {
   'use strict';
 
@@ -24,10 +23,12 @@
   const clear = (node) => { while (node.firstChild) node.removeChild(node.firstChild); };
 
   class ApiError extends Error {
-    constructor(status, code, message, body) { super(message); this.status = status; this.code = code; this.body = body; }
+    constructor(status, code, message, body, retryAfter) {
+      super(message);
+      this.status = status; this.code = code; this.body = body; this.retryAfter = retryAfter || 0;
+    }
   }
 
-  /* JSON request; throws ApiError with the server's error message on non-2xx. */
   async function api(path, options) {
     const opts = Object.assign({ method: 'GET' }, options || {});
     if (opts.json !== undefined) {
@@ -38,12 +39,16 @@
     }
     let res;
     try { res = await fetch(path, opts); }
-    catch (e) { throw new ApiError(0, 'network', 'Cannot reach the Synapse server. Is it still running?'); }
+    catch (e) { throw new ApiError(0, 'network', 'The server is not answering. Is it still running?'); }
     let body = null;
-    try { body = await res.json(); } catch (e) { /* non-JSON */ }
+    try { body = await res.json(); } catch (e) { body = null; }
     if (!res.ok) {
       const err = (body && body.error) || {};
-      throw new ApiError(res.status, err.code || 'http_error', err.message || ('Request failed (' + res.status + ')'), body);
+      const wait = Number(res.headers && res.headers.get && res.headers.get('Retry-After')) || 0;
+      const message = res.status === 429
+        ? 'Too many requests. Try again in ' + (wait || 1) + ' s.'
+        : (err.message || ('Request failed (' + res.status + ')'));
+      throw new ApiError(res.status, err.code || 'http_error', message, body, wait);
     }
     return body;
   }

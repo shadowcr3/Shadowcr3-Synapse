@@ -87,7 +87,6 @@ class TestNetwork(unittest.TestCase):
         np.testing.assert_array_equal(net.predict(X), y)
 
     def test_single_neuron_learns_linearly_separable_data(self):
-        # M1: a one-layer network (a single softmax unit pair) separates AND.
         X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=float)
         y = np.array([0, 0, 0, 1])
         net, opt = Network([2, 2], seed=0), Adam(0.1)
@@ -146,7 +145,7 @@ class TestPersistence(unittest.TestCase):
         meta = json.loads(js.read_text())
         meta["npz_sha256"] = hashlib.sha256(Path(npz).read_bytes()).hexdigest()
         js.write_text(json.dumps(meta))
-        with self.assertRaises(ValueError):       # numpy refuses object arrays when allow_pickle=False
+        with self.assertRaises(ValueError):
             Network.load(self.dir, "m")
 
 

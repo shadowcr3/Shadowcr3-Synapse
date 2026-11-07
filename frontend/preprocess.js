@@ -1,11 +1,3 @@
-/*
- * MNIST-style normalisation of a drawn canvas -> 28x28 uint8 pixels.
- *
- * Port of app/preprocessing.py:mnist_style_normalize. The two must stay in sync; the test
- * suite checks parity. Works in the browser (window.SynapsePre) and in Node (module.exports).
- *
- * Input: grayscale buffer, ink bright on dark (0..255), row-major, width x height.
- */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.SynapsePre = factory();
@@ -16,9 +8,8 @@
   const BOX = 20;
   const INK_THRESHOLD = 32;
   const MIN_BBOX_FRACTION = 0.08;
-  const CENTRE = (SIDE - 1) / 2; // 13.5
+  const CENTRE = (SIDE - 1) / 2;
 
-  /* Row i holds the overlap fraction of output cell i with each input pixel (area filter). */
   function areaWeights(nIn, nOut) {
     const s = nIn / nOut;
     const w = [];
@@ -34,10 +25,6 @@
     return w;
   }
 
-  /*
-   * Returns { pixels: Uint8Array(784), error: null } on success, or
-   * { pixels: null, error: 'blank' | 'too_small' } when there is nothing usable to send.
-   */
   function normalizeToMnist(gray, width, height, opts) {
     opts = opts || {};
     const thr = opts.inkThreshold === undefined ? INK_THRESHOLD : opts.inkThreshold;
@@ -65,8 +52,7 @@
     const nw = Math.max(1, Math.floor(w * scale + 0.5));
     const wy = areaWeights(h, nh), wx = areaWeights(w, nw);
 
-    // res = wy @ crop @ wx^T
-    const tmp = [];                                   // nh x w
+    const tmp = [];
     for (let i = 0; i < nh; i++) {
       const row = new Float64Array(w);
       for (let k = 0; k < h; k++) {
@@ -77,7 +63,7 @@
       }
       tmp.push(row);
     }
-    const res = [];                                   // nh x nw
+    const res = [];
     let peak = 0;
     for (let i = 0; i < nh; i++) {
       const row = new Float64Array(nw);

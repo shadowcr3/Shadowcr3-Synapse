@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""Measure training-step and inference cost on THIS machine; writes docs/PERFORMANCE.md.
-
-    python tools/benchmark.py
-Numbers are machine- and load-dependent; the file records the hardware it was measured on.
-"""
 
 from __future__ import annotations
 
@@ -18,9 +13,9 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from neural_network import Adam, Network, backward, softmax_cross_entropy  # noqa: E402
-from training.augmentation import AugmentConfig, augment_batch           # noqa: E402
-from training.dataset import load_mnist, normalize_pixels                 # noqa: E402
+from neural_network import Adam, Network, backward, softmax_cross_entropy
+from training.augmentation import AugmentConfig, augment_batch
+from training.dataset import load_mnist, normalize_pixels
 
 
 def step_times(dtype, X, y, steps=400, bs=64, augment=False):

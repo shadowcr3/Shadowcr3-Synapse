@@ -10,8 +10,6 @@ NODE = shutil.which("node")
 
 
 class TestFrontendStatic(unittest.TestCase):
-    """Rules that keep the strict CSP (script-src/style-src 'self') working, offline."""
-
     def files(self, *suffixes):
         return [p for p in FRONT.iterdir() if p.suffix in suffixes]
 
@@ -46,7 +44,7 @@ class TestFrontendStatic(unittest.TestCase):
         used = set()
         for p in self.files(".js"):
             used |= set(re.findall(r"\$\('([a-z0-9-]+)'\)", p.read_text()))
-        dynamic = {"tab-", "tabbtn-"}                        # built from the tab name at runtime
+        dynamic = {"tab-", "tabbtn-"}
         missing = {u for u in used if u not in ids and u + "-" not in dynamic and not any(u.startswith(d) for d in dynamic)}
         self.assertEqual(missing, set())
 

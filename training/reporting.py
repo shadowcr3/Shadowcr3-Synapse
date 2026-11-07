@@ -1,10 +1,8 @@
-"""Run summaries: the API-facing metrics blob and the human-readable Markdown report."""
 
 from __future__ import annotations
 
 
 def metrics_report(history, val, test, reject_val, reject_test, latency, ds) -> dict:
-    """Compact, API-facing summary stored inside the model metadata."""
     keys = ("train_loss", "train_acc", "val_loss", "val_acc", "lr", "epoch_seconds")
     rep = {"history": {k: history[k] for k in keys}, "best_epoch": history["best_epoch"],
            "epochs_run": history["epochs_run"], "stopped_early": history["stopped_early"],

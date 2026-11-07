@@ -32,7 +32,7 @@ class TestMetrics(unittest.TestCase):
         self.assertAlmostEqual(metrics.expected_calibration_error(probs, np.array([1, 0]))[0], 1.0)
 
     def test_ece_calibrated_example(self):
-        probs = np.tile([0.8, 0.2], (10, 1))            # confidence 0.8, accuracy 8/10
+        probs = np.tile([0.8, 0.2], (10, 1))
         y = np.array([0] * 8 + [1] * 2)
         self.assertAlmostEqual(metrics.expected_calibration_error(probs, y)[0], 0.0, places=12)
 
@@ -43,7 +43,7 @@ class TestMetrics(unittest.TestCase):
 
     def test_auroc_matches_brute_force(self):
         rng = np.random.default_rng(0)
-        pos, neg = np.round(rng.random(40), 1), np.round(rng.random(55), 1)   # many ties
+        pos, neg = np.round(rng.random(40), 1), np.round(rng.random(55), 1)
         brute = np.mean([1.0 if a > b else 0.5 if a == b else 0.0 for a, b in itertools.product(pos, neg)])
         self.assertAlmostEqual(metrics.roc_auc(pos, neg), brute, places=12)
 

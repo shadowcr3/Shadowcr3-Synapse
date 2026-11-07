@@ -1,4 +1,3 @@
-"""Strict JSON configuration loading: unknown keys and bad values are errors."""
 
 from __future__ import annotations
 
@@ -94,8 +93,6 @@ def load_config(path) -> dict:
 
 
 def apply_overrides(cfg: dict, assignments) -> dict:
-    """Return a validated deep copy with dotted-path overrides, e.g. ["training.epochs=5",
-    "training.augmentation.enabled=true"]. Values are parsed as JSON, else kept as strings."""
     new = copy.deepcopy(cfg)
     for item in assignments:
         if "=" not in item:

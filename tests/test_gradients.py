@@ -13,7 +13,6 @@ TOL = 1e-6
 
 
 def _randomised_net(sizes, seed):
-    """Non-zero biases keep hidden pre-activations away from the ReLU kink at 0."""
     net = Network(sizes, seed=seed)
     rng = np.random.default_rng(seed + 100)
     for layer in net.layers:
@@ -24,7 +23,7 @@ def _randomised_net(sizes, seed):
 class TestGradients(unittest.TestCase):
     def _check(self, net, X, y, **kw):
         with warnings.catch_warnings():
-            warnings.simplefilter("error", RuntimeWarning)   # a kink warning fails the test
+            warnings.simplefilter("error", RuntimeWarning)
             results = gradient_check(net, X, y, **kw)
         for r in results:
             self.assertLess(r["relative_error"], TOL, msg=str(r))
@@ -70,8 +69,8 @@ class TestGradients(unittest.TestCase):
         self.assertTrue(all(r["relative_error"] > 1e-2 for r in results))
 
     def test_checker_warns_on_relu_kink(self):
-        net = Network([4, 3, 2], seed=0)            # zero biases ...
-        X = np.zeros((2, 4))                        # ... and zero input -> Z0 == 0 exactly
+        net = Network([4, 3, 2], seed=0)
+        X = np.zeros((2, 4))
         with self.assertWarns(RuntimeWarning):
             gradient_check(net, X, np.array([0, 1]))
 

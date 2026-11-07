@@ -12,7 +12,7 @@ shows the network thinking, lets you train it, and lets it learn from your own d
 
 Draw a digit. With **Live** on, every neuron lights up as you draw. Pick the true digit to watch the error signal flow backwards.
 The **Train** tab trains new networks, compares hidden-layer sizes and fine-tunes on your saved drawings; the **Model** tab shows measured metrics, versions and rollback.
-Training jobs need MNIST on disk: `python tools/fetch_mnist.py` (hash-verified; already included in the release ZIP).
+Per-client rate limiting is on by default. Fine-tuning needs 30+ saved drawings (a stratified share is held back to check the result). Training jobs need MNIST on disk: `python tools/fetch_mnist.py` (hash-verified; already included in the release ZIP).
 
 ## What you can see and do
 
@@ -54,5 +54,4 @@ rejection of non-digit input is **not universal** (`experiments/ood_eval.md`: le
 
 ## License
 
-GPL-3.0
-
+GPL-3.0-or-later. See [LICENSE](LICENSE).

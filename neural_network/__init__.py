@@ -1,4 +1,3 @@
-"""Synapse neural-network core: pure NumPy, no deep-learning framework."""
 
 from .activations import log_softmax, relu, relu_grad, softmax
 from .backpropagation import backward, gradient_check

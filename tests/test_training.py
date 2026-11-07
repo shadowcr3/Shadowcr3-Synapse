@@ -10,7 +10,6 @@ from training.trainer import train
 
 
 def synthetic(n_per_class, seed, n_classes=9):
-    """uint8 'images' where class c lights up its own block of pixels, plus noise."""
     rng = np.random.default_rng(seed)
     X = rng.integers(0, 40, (n_per_class * n_classes, 784)).astype(np.uint8)
     y = np.repeat(np.arange(n_classes), n_per_class)
@@ -53,7 +52,7 @@ class TestTraining(unittest.TestCase):
     def test_non_finite_loss_aborts(self):
         Xtr, ytr = synthetic(10, 1)
         net = Network([784, 8, 9], seed=0)
-        net.layers[0].W[0, 0] = np.nan    # poisoned weight -> NaN logits -> NaN loss
+        net.layers[0].W[0, 0] = np.nan
         with self.assertRaises(FloatingPointError):
             train(net, Adam(), Xtr, ytr, Xtr, ytr,
                   settings=TrainSettings(epochs=1, batch_size=16, learning_rate=0.001),

@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import gzip
@@ -36,8 +37,8 @@ def sha256_file(path: Path) -> str:
             h.update(chunk)
     return h.hexdigest()
 
+
 def read_idx(path: Path) -> np.ndarray:
-    """Parse a gzip-compressed IDX file of unsigned bytes, validating the header."""
     with gzip.open(path, "rb") as f:
         raw = f.read(MAX_IDX_BYTES + 1)
     if len(raw) > MAX_IDX_BYTES:
@@ -87,7 +88,6 @@ def _download(filename: str, expected_sha: str, dest: Path, mirrors=MIRRORS) -> 
 
 
 def load_mnist(data_dir, download: bool = True) -> dict:
-    """Returns {'x_train','y_train','x_test','y_test','file_sha256'}; images are (N, 28, 28) uint8."""
     data_dir = Path(data_dir)
     hashes = {}
     for key, (filename, expected) in MNIST_FILES.items():
@@ -112,13 +112,11 @@ def load_mnist(data_dir, download: bool = True) -> dict:
 
 
 def normalize_pixels(x_uint8: np.ndarray, dtype=np.float64) -> np.ndarray:
-    """uint8 [0, 255] -> [0, 1] in `dtype` (exact k/255 in float64)."""
     dtype = np.dtype(dtype)
     return x_uint8.astype(dtype) / dtype.type(255)
 
 
 def stratified_split(labels: np.ndarray, val_fraction: float, rng: np.random.Generator):
-    """Per-class random split. Returns sorted (train_idx, val_idx); disjoint and exhaustive."""
     if not 0.0 < val_fraction < 0.5:
         raise ValueError("val_fraction must be in (0, 0.5)")
     train_parts, val_parts = [], []
@@ -139,17 +137,13 @@ class Dataset:
     y_val: np.ndarray
     X_test: np.ndarray
     y_test: np.ndarray
-    X_ood_val: np.ndarray    
+    X_ood_val: np.ndarray
     X_ood_test: np.ndarray
     classes: tuple
     info: dict = field(default_factory=dict)
 
 
 def prepare_data(data_cfg: dict, split_seed, raw: dict | None = None) -> Dataset:
-    """Pipeline: load -> keep configured digits -> stratified train/val split -> flatten
-    -> labels to indices 0..K-1. The official test set is only filtered, never split or
-    used for fitting. Excluded digits are kept aside as out-of-distribution (OOD) samples
-    for evaluating the reject rule; they never enter training."""
     raw = raw if raw is not None else load_mnist(data_cfg["data_dir"], data_cfg.get("download", True))
     classes = tuple(int(c) for c in data_cfg["classes"])
     excluded = [d for d in range(10) if d not in classes]
@@ -193,4 +187,3 @@ def prepare_data(data_cfg: dict, split_seed, raw: dict | None = None) -> Dataset
         "split_sha256": split_hash, "file_sha256": raw.get("file_sha256", {}),
     }
     return ds
-

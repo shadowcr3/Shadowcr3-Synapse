@@ -1,8 +1,3 @@
-"""Synapse application: preprocessing, inference engine, model store, jobs and the Flask API.
-
-`create_app` is exposed lazily so that `python -m app.server` does not import the server module twice.
-`inference.py` and `preprocessing.py` import only `neural_network` (never `training`).
-"""
 
 __all__ = ["create_app"]
 

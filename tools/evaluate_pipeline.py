@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""End-to-end robustness of the drawing pipeline (canvas -> 28x28 -> model).
-
-MNIST test digits are re-rendered as canvas drawings (random size and position, several stroke
-thicknesses), normalised exactly like the browser, and classified. Also checks that the
-JavaScript implementation agrees with the Python reference on whole predictions, and that the
-HTTP API returns the same numbers as direct model calls.
-
-Limits: these are *re-rendered MNIST digits*, so they test geometry and stroke-width invariance,
-not how real people draw. Collect real drawings (UI: Teach the network) for that.
-
-    python tools/evaluate_pipeline.py [--samples 1500]  ->  experiments/pipeline_eval.{json,md}
-"""
 
 from __future__ import annotations
 
@@ -28,13 +16,13 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from app import create_app                                           # noqa: E402
-from app.inference import Predictor                                  # noqa: E402
-from app.preprocessing import mnist_style_normalize                  # noqa: E402
-from app.server import LOOPBACK_HOSTS                                # noqa: E402
-from neural_network.activations import softmax                       # noqa: E402
-from tools import canvas_sim as sim                                  # noqa: E402
-from training.dataset import load_mnist                              # noqa: E402
+from app import create_app
+from app.inference import Predictor
+from app.preprocessing import mnist_style_normalize
+from app.server import LOOPBACK_HOSTS
+from neural_network.activations import softmax
+from tools import canvas_sim as sim
+from training.dataset import load_mnist
 
 THICKNESS = (0, 2, 4, 6, 8)
 
@@ -50,7 +38,8 @@ def score(pred: Predictor, X28_uint8: np.ndarray, y_digit: np.ndarray) -> dict:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(description="Measure the canvas to 28x28 to model pipeline on re-rendered MNIST digits.", epilog="writes experiments/pipeline_eval.json and pipeline_eval.md",
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--model-dir", default="models")
     ap.add_argument("--model-name", default="synapse_v1")
     ap.add_argument("--data-dir", default="data/mnist")
@@ -80,7 +69,6 @@ def main(argv=None) -> int:
         X = np.stack([mnist_style_normalize(c) for c in canv])
         report["canvas_pipeline"][f"extra_stroke_width_{2 * t}px"] = score(pred, X, y)
 
-    # JavaScript implementation vs Python reference, on whole predictions
     node = shutil.which("node")
     if node and args.js_samples:
         k = args.js_samples
@@ -97,7 +85,6 @@ def main(argv=None) -> int:
                                   "prediction_agreement": float(np.mean(top(js) == top(py))),
                                   "js_accuracy": pj["accuracy"], "python_accuracy": pp["accuracy"]}
 
-    # HTTP API vs direct model call
     app = create_app(args.model_dir, args.model_name, LOOPBACK_HOSTS)
     client = app.test_client()
     maxdiff, n_api = 0.0, 60

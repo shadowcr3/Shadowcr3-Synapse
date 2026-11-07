@@ -1,9 +1,3 @@
-"""Simulated canvas drawings (280x280, ink bright on dark) for robustness evaluation.
-
-Two sources: MNIST digits re-rendered the way a person's drawing would arrive (random size,
-position, stroke thickness), and procedural non-digits (scribbles, shapes, noise, letters,
-symbols). Everything is then pushed through the same normalisation the browser uses.
-"""
 
 from __future__ import annotations
 
@@ -26,7 +20,6 @@ def resize_bilinear(img: np.ndarray, nh: int, nw: int) -> np.ndarray:
 
 
 def dilate(img: np.ndarray, r: int) -> np.ndarray:
-    """Separable square max filter of radius r (thickens strokes by 2r pixels)."""
     if r <= 0:
         return img
     h, w = img.shape
@@ -46,7 +39,6 @@ def place(patch: np.ndarray, rng: np.random.Generator, size: int = SIZE) -> np.n
 
 
 def digit_to_canvas(img28: np.ndarray, rng: np.random.Generator, side=(100, 240), thickness: int = 0) -> np.ndarray:
-    """MNIST digit -> 280x280 canvas: crop to ink, scale max side to U(side), thicken, place randomly."""
     ys, xs = np.nonzero(img28 > 20)
     crop = img28[ys.min():ys.max() + 1, xs.min():xs.max() + 1].astype(float)
     h, w = crop.shape
@@ -55,9 +47,7 @@ def digit_to_canvas(img28: np.ndarray, rng: np.random.Generator, side=(100, 240)
     return place(np.clip(dilate(patch, thickness), 0, 255), rng)
 
 
-# ----- procedural drawings ------------------------------------------------------------------
 def draw_polyline(points, width: float, size: int = SIZE) -> np.ndarray:
-    """Anti-aliased thick polyline: ink = clip(width/2 + 0.5 - distance to the path)."""
     yy, xx = np.mgrid[:size, :size].astype(float)
     dist = np.full((size, size), np.inf)
     pts = np.asarray(points, dtype=float)
@@ -108,7 +98,7 @@ def shape(kind: str, rng: np.random.Generator) -> np.ndarray:
     elif kind == "spiral":
         t = np.linspace(0, 4 * np.pi, 90)
         pts = np.stack([c[0] + r * t / (4 * np.pi) * np.cos(t), c[1] + r * t / (4 * np.pi) * np.sin(t)], 1)
-    else:  # check mark
+    else:
         pts = np.array([c + [-r, 0], c + [-r / 3, r / 2], c + [r, -r]])
     return draw_polyline(np.clip(pts, 5, SIZE - 5), w)
 
@@ -128,7 +118,6 @@ def dot(rng: np.random.Generator) -> np.ndarray:
     return 255.0 * np.clip(r + 0.5 - np.hypot(yy - cy, xx - cx), 0, 1)
 
 
-# ----- glyphs (needs matplotlib; its bundled DejaVu fonts, so no system fonts required) -----------
 FONTS = (("DejaVu Sans", "normal", "normal"), ("DejaVu Sans", "bold", "normal"), ("DejaVu Serif", "normal", "normal"),
          ("DejaVu Serif", "bold", "italic"), ("DejaVu Sans Mono", "normal", "normal"), ("DejaVu Sans", "normal", "oblique"))
 

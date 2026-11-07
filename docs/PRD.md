@@ -24,7 +24,8 @@ No cloud service, accounts, or multi-user training; no recognition of letters or
 | R5 | Hidden-layer size experiments | `sweep` job, comparison table/charts | `test_jobs`, UI test |
 | R6 | More training data | augmentation (fresh variants each epoch), user drawings, MNIST replay | `test_augmentation`, `test_jobs` |
 | R7 | Train from the UI, alongside use | train / fine-tune jobs on a private copy, atomic swap | `test_jobs`, `test_models` |
-| R8 | Safe model changes | validation gate, rollback, no force | `test_models`, `test_api` |
+| R8 | Safe model changes | validation gate (including a stratified held-out set of your own drawings for fine-tuned models), rollback, no force | `test_models`, `test_jobs`, `test_api` |
+| R12 | Abuse resistance on a local server | per-client rate limits, Origin/Host checks, size limits | `test_ratelimit`, `test_api` |
 | R9 | Efficient | float32, fused ops, in-place Adam, prefetch | `docs/PERFORMANCE.md` |
 | R10 | Production hardening | see `docs/SECURITY.md`, `docs/OPERATIONS.md` | `test_api` |
 | R11 | Consistent, verifiable release | `verify_release`, manifest | `test_release` |

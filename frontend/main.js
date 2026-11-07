@@ -1,4 +1,3 @@
-/* App shell: tabs, health pill, read-only handling, start-up order. */
 (function (S) {
   'use strict';
   const { $, api } = S.dom;
@@ -17,32 +16,39 @@
     if (history.replaceState) history.replaceState(null, '', '#' + name);
   }
 
-  function setPill(kind, text) {
-    const p = $('status-pill');
-    p.className = 'pill pill-' + kind;
+  function setStatus(kind, text) {
+    $('status-pill').className = 'status ' + kind;
     $('status-text').textContent = text;
   }
 
   function applyReadOnly(flag) {
     if (flag === st.readOnly) return;
     st.readOnly = flag;
-    ['btn-train', 'btn-sweep', 'btn-ft', 'btn-finetune', 'btn-ft-clear', 'btn-save-sample', 'btn-undo', 'btn-rollback'].forEach((id) => { const n = $(id); if (n) n.disabled = flag || n.disabled; });
-    if (flag) ['t-msg', 's-msg', 'ft-msg', 'fb-status'].forEach((id) => { $(id).textContent = 'This server is read-only: training, saving drawings and model changes are disabled.'; });
+    ['btn-train', 'btn-sweep', 'btn-ft', 'btn-finetune', 'btn-ft-clear', 'btn-save-sample', 'btn-undo', 'btn-rollback'].forEach((id) => {
+      const n = $(id); if (n) n.disabled = flag || n.disabled;
+    });
+    if (flag) ['t-msg', 's-msg', 'ft-msg', 'fb-status'].forEach((id) => {
+      $(id).textContent = 'This server is read-only: training, saving drawings and changing the network are switched off.';
+    });
   }
 
   async function checkHealth() {
     try {
       const h = await api('/health');
-      setPill('ok', 'Model loaded · ' + (h.active_model === 'release' ? 'release' : h.active_model) + (h.read_only ? ' · read-only' : '') + (h.training_busy ? ' · training' : ''));
+      setStatus('ok', 'model loaded, ' + (h.active_model === 'release' ? 'release' : h.active_model) + (h.read_only ? ', read-only' : '') + (h.training_busy ? ', training' : ''));
       applyReadOnly(h.read_only);
       return h;
-    } catch (e) { setPill('err', 'Server offline'); return null; }
+    } catch (e) {
+      if (e.code === 'rate_limited') return null;
+      setStatus('err', 'server offline');
+      return null;
+    }
   }
 
   async function init() {
     TABS.forEach((t) => $('tabbtn-' + t).addEventListener('click', () => showTab(t)));
     let digits;
-    try { digits = (await api('/model/info')).digits; } catch (e) { setPill('err', 'Server offline'); }
+    try { digits = (await api('/model/info')).digits; } catch (e) { setStatus('err', 'server offline'); }
     S.predict.init(digits);
     S.train.init();
     S.model.init();

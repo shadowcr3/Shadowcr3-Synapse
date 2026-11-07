@@ -1,4 +1,3 @@
-"""Evaluation: accuracy, per-class metrics, calibration, reject rule, latency, charts."""
 
 from __future__ import annotations
 
@@ -47,21 +46,17 @@ def evaluate_classifier(network, X_uint8, y, classes, n_bins: int = 15) -> dict:
     }
 
 
-# ----- reject rule: max-softmax score ----------------------------------------------
 def max_softmax_scores(network, X_uint8) -> np.ndarray:
     return softmax(batched_logits(network, X_uint8)).max(axis=1)
 
 
 def select_reject_threshold(scores_in_distribution: np.ndarray, target_accept: float) -> float:
-    """Largest threshold t such that at least `target_accept` of in-distribution
-    validation samples satisfy score >= t. Uses in-distribution data only."""
     if not 0.0 < target_accept <= 1.0:
         raise ValueError("target_accept must be in (0, 1]")
     return float(np.quantile(scores_in_distribution, 1.0 - target_accept, method="lower"))
 
 
 def evaluate_reject(network, X_in, y_in, X_out, threshold: float) -> dict:
-    """Accept a sample iff its max softmax probability >= threshold."""
     s_in, s_out = max_softmax_scores(network, X_in), max_softmax_scores(network, X_out)
     pred_in = batched_logits(network, X_in).argmax(axis=1)
     accepted = s_in >= threshold
@@ -77,7 +72,6 @@ def evaluate_reject(network, X_in, y_in, X_out, threshold: float) -> dict:
 
 
 def measure_latency(network, X_uint8, repeats: int = 1000, warmup: int = 50, seed: int = 0) -> dict:
-    """Single-sample latency of normalize + forward + softmax (no HTTP, no preprocessing)."""
     rng = np.random.default_rng(seed)
     idx = rng.integers(0, len(X_uint8), size=repeats + warmup)
     times = []
@@ -92,7 +86,6 @@ def measure_latency(network, X_uint8, repeats: int = 1000, warmup: int = 50, see
             "mean_ms": float(t.mean()), "repeats": repeats}
 
 
-# ----- charts (optional: requires matplotlib) --------------------------------------
 def save_charts(history: dict, test_eval: dict, classes, out_dir) -> list[str]:
     try:
         import matplotlib
@@ -138,4 +131,3 @@ def save_charts(history: dict, test_eval: dict, classes, out_dir) -> list[str]:
     fig.tight_layout(); p = out_dir / "reliability.png"; fig.savefig(p, dpi=130); plt.close(fig)
     written.append(str(p))
     return written
-

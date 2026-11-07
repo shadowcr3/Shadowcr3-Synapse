@@ -1,4 +1,3 @@
-"""Fully connected feedforward network: ReLU hidden layers, softmax output."""
 
 from __future__ import annotations
 
@@ -26,9 +25,6 @@ def _sha256_file(path: Path) -> str:
 
 
 class Network:
-    """Layers: Dense -> ReLU -> ... -> Dense (logits). Softmax is applied for
-    probabilities and is fused with the loss during training."""
-
     def __init__(self, layer_sizes: Sequence[int], seed=42, dtype=np.float64) -> None:
         sizes = [int(s) for s in layer_sizes]
         if len(sizes) < 2 or any(s < 1 for s in sizes):
@@ -44,9 +40,7 @@ class Network:
             for i, (fan_in, fan_out) in enumerate(zip(sizes[:-1], sizes[1:]))
         ]
 
-    # ----- parameters ---------------------------------------------------------------
     def parameters(self) -> list[np.ndarray]:
-        """[W0, b0, W1, b1, ...] - the live arrays (optimisers update them in place)."""
         return [a for layer in self.layers for a in (layer.W, layer.b)]
 
     def parameter_names(self) -> list[str]:
@@ -68,7 +62,6 @@ class Network:
         for p, s in zip(params, state):
             p[...] = s
 
-    # ----- inference ----------------------------------------------------------------
     def _prepare(self, X) -> np.ndarray:
         X = np.asarray(X)
         if X.dtype.kind not in "fiu":
@@ -83,7 +76,6 @@ class Network:
         return X
 
     def forward(self, X):
-        """Returns (logits, cache). cache[l] = (A_{l-1}, Z_l) for backpropagation."""
         a = self._prepare(X)
         cache = []
         z = a
@@ -106,9 +98,7 @@ class Network:
     def predict(self, X, batch_size: int = 4096) -> np.ndarray:
         return np.argmax(self.predict_logits(X, batch_size), axis=1)
 
-    # ----- persistence --------------------------------------------------------------
     def save(self, directory, name: str, extra_metadata: dict | None = None) -> tuple[Path, Path]:
-        """Write <name>.npz (weights) and <name>.json (metadata + npz SHA-256)."""
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True)
         npz_path, json_path = directory / f"{name}.npz", directory / f"{name}.json"
@@ -142,8 +132,6 @@ class Network:
 
     @classmethod
     def load(cls, directory, name: str):
-        """Load without pickle; verifies the npz hash, tensor names, shapes and finiteness.
-        Returns (network, metadata)."""
         directory = Path(directory)
         npz_path, json_path = directory / f"{name}.npz", directory / f"{name}.json"
         with open(json_path, "r", encoding="utf-8") as f:

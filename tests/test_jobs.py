@@ -52,14 +52,14 @@ class TestTrainJob(JobCase):
         self.assertEqual(types[0], "job_started"); self.assertEqual(types[-1], "job_finished")
         self.assertIn("init", types); self.assertEqual(types.count("epoch"), 3)
         epoch = next(e for e in st["events"] if e["type"] == "epoch")
-        self.assertEqual(len(epoch["weight_stats"]), 4)                    # W0 b0 W1 b1
+        self.assertEqual(len(epoch["weight_stats"]), 4)
         self.assertEqual(epoch["tiles"]["n"], 16); self.assertEqual(epoch["tiles"]["shape"], [28, 28])
         self.assertIn("deltas", epoch["probe"]["trace"]["backward"])
         res = job["result"]
         self.assertEqual(res["parameter_count"], (784 * 16 + 16) + (16 * 9 + 9))
         self.assertIn(res["candidate_id"], [v["id"] for v in self.store.list_versions()])
         self.assertIn("passed", res["gate"])
-        self.assertEqual(self.store.active_id, "release")                  # never auto-promoted
+        self.assertEqual(self.store.active_id, "release")
 
     def test_events_are_json_serialisable_and_ordered(self):
         import json
@@ -99,7 +99,7 @@ class TestTrainJob(JobCase):
         st = self.mgr.status()
         self.assertEqual(st["job"]["state"], "cancelled")
         self.assertEqual([v["id"] for v in self.store.list_versions()], ["release"])
-        self.assertFalse(self.mgr.cancel())                                # nothing left to cancel
+        self.assertFalse(self.mgr.cancel())
 
     def test_only_one_job_at_a_time(self):
         self.mgr.start("train", {"hidden_sizes": [64], "epochs": 60, "batch_size": 16})
@@ -132,33 +132,84 @@ class TestTimeLimit(JobCase):
 class TestFinetune(JobCase):
     def test_needs_enough_samples(self):
         self.add_samples(MIN_USER_SAMPLES - 1)
-        with self.assertRaises(JobError):
+        with self.assertRaises(JobError) as cm:
             self.mgr.start("finetune", {})
+        self.assertIn("at least", str(cm.exception))
 
-    def test_finetune_reports_before_after_and_can_auto_promote(self):
-        self.add_samples(18)
-        st = self.run_job("finetune", {"epochs": 2})
+    def test_many_drawings_of_one_digit_do_not_qualify(self):
+        rng = np.random.default_rng(3)
+        for _ in range(60):
+            self.feedback.add(rng.integers(0, 256, 784).astype(np.uint8), 4)
+        with self.assertRaises(JobError) as cm:
+            self.mgr.start("finetune", {})
+        self.assertIn("cover 1 digits", str(cm.exception))
+
+    def test_finetune_holds_out_a_stratified_set_and_records_it(self):
+        self.add_samples(54)
+        st = self.run_job("finetune", {"epochs": 2, "auto_promote": False})
         res = st["job"]["result"]
         self.assertEqual(st["job"]["state"], "done", st["job"])
-        self.assertEqual(res["user_samples"] + res["user_holdout"], 18)
-        self.assertGreater(res["user_holdout"], 0)
+        self.assertEqual(res["user_samples"] + res["user_holdout"], 54)
+        self.assertGreaterEqual(res["user_holdout"], 8)
         for k in ("user_holdout_accuracy_before", "user_holdout_accuracy_after",
                   "mnist_validation_accuracy_before", "mnist_validation_accuracy_after"):
             self.assertIsNotNone(res[k], k)
+        uh = self.store.get(res["candidate_id"]).metadata["evaluation"]["user_holdout"]
+        self.assertEqual(uh["n"], res["user_holdout"]); self.assertGreaterEqual(uh["digits"], 4)
+        self.assertEqual(sum(uh["per_digit_n"].values()), uh["n"])
+        self.assertTrue(all(v < 6 for v in uh["per_digit_n"].values()))
+
+    def test_holdout_is_never_trained_on(self):
+        from app.feedback import holdout_mask
+        self.add_samples(54)
+        X, y, ids = self.feedback.arrays(self.ds.classes)
+        hold = holdout_mask(ids, y)
+        seen = []
+        real_train = __import__("app.jobs", fromlist=["train"]).train
+
+        def spy(net, opt, Xtr, ytr, *a, **k):
+            seen.append(Xtr)
+            return real_train(net, opt, Xtr, ytr, *a, **k)
+
+        with mock.patch("app.jobs.train", side_effect=spy):
+            self.run_job("finetune", {"epochs": 1, "auto_promote": False})
+        trained = {bytes(row) for row in seen[0]}
+        for row in X[hold]:
+            self.assertNotIn(bytes(row), trained)
+
+    def test_finetune_can_auto_promote_only_through_the_gate(self):
+        self.add_samples(54)
+        st = self.run_job("finetune", {"epochs": 2})
+        res = st["job"]["result"]
         init = next(e for e in st["events"] if e["type"] == "init")
         self.assertEqual(init["user_samples"], res["user_samples"])
         if res["gate"]["passed"]:
             self.assertTrue(res["promoted"]); self.assertEqual(self.store.active_id, res["candidate_id"])
             cand = self.store.get(res["candidate_id"]).metadata
             self.assertEqual(cand["parent"], "release"); self.assertEqual(cand["source"], "ui-finetune")
+        else:
+            self.assertFalse(res["promoted"]); self.assertEqual(self.store.active_id, "release")
 
-    def test_auto_promote_off_never_swaps(self):
-        self.add_samples(12)
+    def test_auto_promote_off_never_swaps_but_manual_promotion_uses_the_same_gate(self):
+        self.add_samples(54)
         res = self.run_job("finetune", {"epochs": 1, "auto_promote": False})["job"]["result"]
         self.assertFalse(res["promoted"]); self.assertEqual(self.store.active_id, "release")
+        manual = self.store.evaluate_gate(res["candidate_id"])
+        self.assertEqual(manual["passed"], res["gate"]["passed"])
+        self.assertEqual(manual["reasons"], res["gate"]["reasons"])
+
+    def test_candidate_without_the_holdout_evidence_cannot_be_promoted(self):
+        import json
+        self.add_samples(54)
+        res = self.run_job("finetune", {"epochs": 1, "auto_promote": False})["job"]["result"]
+        path = self.dir / "candidates" / f"{res['candidate_id']}.json"
+        meta = json.loads(path.read_text()); del meta["evaluation"]["user_holdout"]
+        path.write_text(json.dumps(meta))
+        fresh = ModelStore(self.dir)
+        self.assertFalse(fresh.promote(res["candidate_id"])["passed"])
 
     def test_finetune_does_not_modify_the_served_model(self):
-        self.add_samples(12)
+        self.add_samples(54)
         before = [p.copy() for p in self.store.predictor.network.parameters()]
         self.run_job("finetune", {"epochs": 2, "auto_promote": False})
         for a, b in zip(before, self.store.predictor.network.parameters()):
@@ -173,7 +224,7 @@ class TestSweep(JobCase):
         self.assertEqual(res[0]["parameter_count"], (784 * 8 + 8) + (8 * 9 + 9))
         self.assertEqual(res[1]["layer_sizes"], [784, 16, 8, 9])
         self.assertEqual(sum(e["type"] == "sweep_arch_done" for e in st["events"]), 2)
-        self.assertEqual([v["id"] for v in self.store.list_versions()], ["release"])     # nothing saved
+        self.assertEqual([v["id"] for v in self.store.list_versions()], ["release"])
 
     def test_sweep_validation(self):
         for bad in ({"architectures": []}, {"architectures": [[8]] * 9}, {"architectures": [[1]]},

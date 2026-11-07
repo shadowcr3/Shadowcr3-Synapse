@@ -29,7 +29,7 @@ class TestLoss(unittest.TestCase):
         logits, y = rng.normal(size=(6, 9)), rng.integers(0, 9, 6)
         _, g = softmax_cross_entropy(logits, y)
         np.testing.assert_allclose(g, (softmax(logits) - np.eye(9)[y]) / 6)
-        np.testing.assert_allclose(g.sum(axis=1), 0.0, atol=1e-15)  # rows of (P-Y) sum to 0
+        np.testing.assert_allclose(g.sum(axis=1), 0.0, atol=1e-15)
 
     def test_confident_wrong_logits_do_not_overflow(self):
         loss, g = softmax_cross_entropy(np.array([[2000.0, 0.0]]), np.array([1]))

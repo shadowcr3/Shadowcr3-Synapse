@@ -51,7 +51,7 @@ class TestParsePixels(unittest.TestCase):
                 parse_pixels(b)
 
     def test_blank_and_tiny_are_blank_errors(self):
-        for fill, n in ((0, 0), (200, 5), (10, 500)):          # empty / too little ink / too faint
+        for fill, n in ((0, 0), (200, 5), (10, 500)):
             with self.assertRaises(BlankInputError):
                 parse_pixels(payload(fill, n))
         self.assertEqual(BlankInputError.code, "blank_input")
@@ -85,7 +85,7 @@ class TestNormalize(unittest.TestCase):
             self.assertLess(np.abs(out - ref).mean(), 12.0)
 
     def test_aspect_ratio_is_preserved(self):
-        out = mnist_style_normalize(bar(x0=135, x1=145))        # thin tall bar, like a "1"
+        out = mnist_style_normalize(bar(x0=135, x1=145))
         ys, xs = np.nonzero(out)
         self.assertGreater((ys.max() - ys.min() + 1) / (xs.max() - xs.min() + 1), 4)
 
@@ -108,14 +108,12 @@ class TestNormalize(unittest.TestCase):
 
 @unittest.skipUnless(NODE, "node not installed")
 class TestJsParity(unittest.TestCase):
-    """frontend/preprocess.js must produce the same pixels as the Python reference."""
-
     @staticmethod
     def _canvases():
         rng = np.random.default_rng(0)
         out = [bar(), bar(x0=20, x1=40, y0=10, y1=120), ring(), ring(cx=60, cy=200, r=40, w=12),
                bar(x0=0, x1=20, y0=0, y1=280)]
-        for _ in range(8):                                     # random thick polylines
+        for _ in range(8):
             c = np.zeros((280, 280)); yy, xx = np.mgrid[:280, :280]
             pts = rng.integers(40, 240, (4, 2))
             for (y0, x0), (y1, x1) in zip(pts[:-1], pts[1:]):
@@ -138,7 +136,7 @@ class TestJsParity(unittest.TestCase):
             py = mnist_style_normalize(c)
             self.assertIsNone(js["error"])
             diff = np.abs(np.array(js["pixels"], dtype=int).reshape(28, 28) - py.astype(int))
-            self.assertLessEqual(diff.max(), 1)                # rounding at .5 boundaries only
+            self.assertLessEqual(diff.max(), 1)
 
     def test_blank_and_tiny_parity(self):
         tiny = np.zeros((280, 280)); tiny[100:106, 100:106] = 255

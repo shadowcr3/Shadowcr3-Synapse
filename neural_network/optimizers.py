@@ -1,4 +1,3 @@
-"""Optimisers. Both update parameter arrays in place."""
 
 from __future__ import annotations
 
@@ -16,8 +15,6 @@ def _check(params: Sequence[np.ndarray], grads: Sequence[np.ndarray]) -> None:
 
 
 class SGD:
-    """Plain (mini-batch) gradient descent: theta <- theta - lr * g."""
-
     def __init__(self, learning_rate: float = 0.01) -> None:
         if learning_rate <= 0:
             raise ValueError("learning_rate must be positive")
@@ -30,18 +27,6 @@ class SGD:
 
 
 class Adam:
-    """Adam (Kingma & Ba, 2015) with optional decoupled weight decay (AdamW).
-
-    Uses the paper's efficient form: bias corrections are folded into the step size,
-        lr_t = lr * sqrt(1 - b2^t) / (1 - b1^t),   eps_hat = eps * sqrt(1 - b2^t),
-        theta <- theta - lr_t * m / (sqrt(v) + eps_hat),
-    which is algebraically identical to m_hat / (sqrt(v_hat) + eps) but needs fewer passes
-    over memory. All updates run in place on preallocated scratch buffers.
-
-    weight_decay applies only to weight matrices (ndim == 2), never to biases.
-    `lr` may be changed between steps (learning-rate schedules).
-    """
-
     def __init__(self, learning_rate: float = 1e-3, beta1: float = 0.9,
                  beta2: float = 0.999, epsilon: float = 1e-8, weight_decay: float = 0.0) -> None:
         if learning_rate <= 0:

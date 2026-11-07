@@ -21,7 +21,7 @@ class TestTrace(unittest.TestCase):
         np.testing.assert_allclose(t["layers"][-1]["probs"], net.predict_proba(x)[0], atol=1e-4)
         self.assertEqual([l["name"] for l in t["layers"]], ["hidden1", "hidden2", "output"])
         self.assertEqual(t["predicted"], int(net.predict(x)[0]))
-        self.assertTrue(all(v >= 0 for v in t["layers"][0]["activation"]))          # post-ReLU
+        self.assertTrue(all(v >= 0 for v in t["layers"][0]["activation"]))
 
     def test_backward_deltas_match_backprop(self):
         net, x = net_and_x(1)
@@ -30,7 +30,6 @@ class TestTrace(unittest.TestCase):
         logits, cache = net.forward(x)
         _, dl = softmax_cross_entropy(logits, np.array([y]))
         grads = backward(net, cache, dl)
-        # dW_l = delta_l (outer) a_{l-1}  =>  delta_l can be recovered from db_l (N = 1: db = delta)
         np.testing.assert_allclose(t["backward"]["deltas"]["output"], grads[5], atol=1e-4)
         np.testing.assert_allclose(t["backward"]["deltas"]["hidden2"], grads[3], atol=1e-4)
         np.testing.assert_allclose(t["backward"]["deltas"]["hidden1"], grads[1], atol=1e-4)

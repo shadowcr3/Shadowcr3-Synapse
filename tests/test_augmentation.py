@@ -9,7 +9,7 @@ from training.dataset import normalize_pixels
 def digits(n=32, seed=0):
     rng = np.random.default_rng(seed)
     x = np.zeros((n, 28, 28), dtype=np.uint8)
-    x[:, 6:22, 12:16] = rng.integers(180, 256, (n, 16, 4))        # vertical bar
+    x[:, 6:22, 12:16] = rng.integers(180, 256, (n, 16, 4))
     return x.reshape(n, 784)
 
 
@@ -28,7 +28,6 @@ class TestAugmentation(unittest.TestCase):
     def test_integer_translation_matches_roll(self):
         cfg = AugmentConfig(True, 0, 0, 0, 0, 0)
         x = digits(4)
-        # force tx=+2, ty=-1 by monkeying the rng: uniform(-t, t) -> use huge t then compare shift stats instead
         shifted = augment_batch(x, np.random.default_rng(1), AugmentConfig(True, 0, 0, 0, 2.0, 0), np.float64)
         base = normalize_pixels(x).reshape(-1, 28, 28)
         com = lambda im: np.array([(im.sum(1) * np.arange(28)).sum(), (im.sum(0) * np.arange(28)).sum()]) / im.sum()

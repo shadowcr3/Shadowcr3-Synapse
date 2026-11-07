@@ -1,10 +1,3 @@
-"""Versioned model store: the release model plus candidates created from the UI.
-
-Serving reads an immutable Predictor through a single reference, so a promotion or rollback
-is an atomic pointer swap: in-flight requests finish on the old model, new ones use the new.
-Candidates are promoted only through a validation gate (never "force"), and every promotion
-can be rolled back. State lives in models/registry.json (written atomically).
-"""
 
 from __future__ import annotations
 
@@ -47,7 +40,6 @@ class ModelStore:
                 active, self._history = RELEASE_ID, []
         self._active_id = active
 
-    # ----- serving ------------------------------------------------------------------
     @property
     def predictor(self) -> Predictor:
         return self._cache[self._active_id]
@@ -56,7 +48,6 @@ class ModelStore:
     def active_id(self) -> str:
         return self._active_id
 
-    # ----- registry -----------------------------------------------------------------
     def _read_registry(self) -> dict:
         try:
             with open(self.registry_path, "r", encoding="utf-8") as f:
@@ -73,7 +64,6 @@ class ModelStore:
         os.chmod(tmp, 0o644)
         os.replace(tmp, self.registry_path)
 
-    # ----- candidates ---------------------------------------------------------------
     @staticmethod
     def _check_id(cid: str) -> str:
         if not isinstance(cid, str) or not ID_RE.match(cid):
@@ -145,10 +135,7 @@ class ModelStore:
             out.sort(key=lambda v: (v["kind"] != "release", v["created_utc"] or ""), reverse=False)
             return out
 
-    # ----- promotion gate -----------------------------------------------------------
-    def evaluate_gate(self, cid: str, tolerance: float = 0.003, user_before: float | None = None,
-                      user_after: float | None = None) -> dict:
-        """Would `cid` be allowed to replace the active model? Pure; changes nothing."""
+    def evaluate_gate(self, cid: str, tolerance: float = 0.003) -> dict:
         cand, active = self.get(cid), self.predictor
         c_ev, a_ev = cand.metadata.get("evaluation", {}), active.metadata.get("evaluation", {})
         c_acc, a_acc = c_ev.get("validation_accuracy"), a_ev.get("validation_accuracy")
@@ -163,16 +150,29 @@ class ModelStore:
             reasons.append("missing validation accuracy")
         elif c_acc < a_acc - tolerance:
             reasons.append(f"validation accuracy {c_acc:.4f} is more than {tolerance:.3f} below the active model's {a_acc:.4f}")
-        if user_before is not None and user_after is not None and user_after < user_before:
-            reasons.append("accuracy on your held-out drawings got worse")
+        if cand.metadata.get("source") == "ui-finetune":
+            reasons += self._user_holdout_reasons(cand, c_ev.get("user_holdout"))
         return {"candidate_id": cid, "passed": not reasons, "reasons": reasons, "tolerance": tolerance,
                 "candidate_validation_accuracy": c_acc, "active_validation_accuracy": a_acc,
                 "active_id": self._active_id}
 
-    def promote(self, cid: str, tolerance: float = 0.003, user_before=None, user_after=None) -> dict:
+    def _user_holdout_reasons(self, cand, uh) -> list:
+        from .feedback import MIN_HOLDOUT, MIN_HOLDOUT_DIGITS
+        out = []
+        if not isinstance(uh, dict) or uh.get("accuracy_before") is None or uh.get("accuracy_after") is None:
+            return ["no held-out drawings of yours were used to check this model"]
+        if uh.get("n", 0) < MIN_HOLDOUT or uh.get("digits", 0) < MIN_HOLDOUT_DIGITS:
+            out.append(f"the held-out check was too small ({uh.get('n', 0)} drawings over {uh.get('digits', 0)} digits)")
+        if uh["accuracy_after"] < uh["accuracy_before"]:
+            out.append("accuracy on your held-out drawings got worse")
+        if cand.metadata.get("parent") != self._active_id:
+            out.append("it was fine-tuned from a different model than the one that is active now")
+        return out
+
+    def promote(self, cid: str, tolerance: float = 0.003) -> dict:
         with self._lock:
             self._check_id(cid)
-            decision = self.evaluate_gate(cid, tolerance, user_before, user_after)
+            decision = self.evaluate_gate(cid, tolerance)
             if decision["passed"]:
                 self._history.append(self._active_id)
                 self._history = self._history[-10:]

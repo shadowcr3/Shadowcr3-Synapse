@@ -33,7 +33,7 @@ class ApiCase(unittest.TestCase):
         import shutil
         shutil.copytree(self.dir, self.models, ignore=shutil.ignore_patterns("m-*", "fb-*"))
         self.app = create_app(self.models, allowed_hosts=LOOPBACK_HOSTS, data_provider=lambda: self.ds,
-                              feedback_path=self.fb, read_only=self.read_only)
+                              feedback_path=self.fb, read_only=self.read_only, rate_limit=False)
         self.c = self.app.test_client()
         self.addCleanup(self._cleanup)
 
@@ -152,7 +152,9 @@ class TestFeedbackApi(ApiCase):
         self.assertEqual((r.status_code, r.json["count"]), (201, 1))
         r = self.c.post("/feedback", json={**self.px(1), "label": 2})
         self.assertEqual((r.status_code, r.json["duplicate"]), (200, True))
-        self.assertEqual(self.c.get("/feedback/stats").json["per_digit"]["2"], 1)
+        stats = self.c.get("/feedback/stats").json
+        self.assertEqual(stats["per_digit"]["2"], 1)
+        self.assertFalse(stats["readiness"]["ready"]); self.assertGreater(len(stats["readiness"]["reasons"]), 0)
         self.assertEqual(self.c.delete("/feedback").status_code, 400)
         self.assertEqual(self.c.delete("/feedback?confirm=yes").json["deleted"], 1)
         self.assertEqual(self.c.get("/feedback/stats").json["total"], 0)
@@ -177,7 +179,7 @@ class TestJobsApi(ApiCase):
     def test_train_promote_rollback_flow(self):
         r = self.c.post("/jobs/train", json={"hidden_sizes": [16], "epochs": 3, "batch_size": 32})
         self.assertEqual(r.status_code, 202)
-        self.assertEqual(self.c.post("/jobs/train", json={}).status_code, 409)          # busy
+        self.assertEqual(self.c.post("/jobs/train", json={}).status_code, 409)
         st = self._wait()
         self.assertEqual(st["job"]["state"], "done")
         cid = st["job"]["result"]["candidate_id"]
@@ -210,7 +212,7 @@ class TestJobsApi(ApiCase):
     def test_data_unavailable_is_503(self):
         def boom():
             raise DataUnavailable("no MNIST")
-        app = create_app(self.models, allowed_hosts=LOOPBACK_HOSTS, data_provider=boom, feedback_path=self.fb)
+        app = create_app(self.models, allowed_hosts=LOOPBACK_HOSTS, data_provider=boom, feedback_path=self.fb, rate_limit=False)
         r = app.test_client().post("/jobs/train", json={})
         self.assertEqual((r.status_code, r.json["error"]["code"]), (503, "data_unavailable"))
 
@@ -240,7 +242,7 @@ class TestOodEndpoint(ApiCase):
         if report is not None:
             (exp / "ood_eval.json").write_text(json.dumps(report))
         return create_app(self.models, allowed_hosts=LOOPBACK_HOSTS, data_provider=lambda: self.ds,
-                          feedback_path=self.fb, experiments_dir=exp).test_client()
+                          feedback_path=self.fb, experiments_dir=exp, rate_limit=False).test_client()
 
     def test_served_only_when_bound_to_the_active_models_hash(self):
         sha = self.app.extensions["synapse"]["store"].predictor.metadata["npz_sha256"]

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from __future__ import annotations
 
 import argparse
@@ -53,7 +55,6 @@ def make_settings(tr: dict) -> TrainSettings:
 
 
 def gradient_preflight(net: Network, X_uint8, y, seed: int = 0) -> list[dict]:
-    """Check backprop on a float64 copy of `net` (finite differences need float64)."""
     check = Network(net.layer_sizes, seed=0, dtype=np.float64)
     check.set_state([p.astype(np.float64) for p in net.parameters()])
     rng = np.random.default_rng(seed)
@@ -67,7 +68,8 @@ def gradient_preflight(net: Network, X_uint8, y, seed: int = 0) -> list[dict]:
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(description="Train and evaluate the Synapse release model.", epilog="examples:\n  python train.py\n  python train.py --set training.epochs=2\n  python train.py --skip-test --out-root /tmp/try",
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", default="configs/default.json")
     ap.add_argument("--set", action="append", default=[], metavar="KEY=VALUE", help="override a config value")
     ap.add_argument("--epochs", type=int)
@@ -112,6 +114,7 @@ def main(argv=None) -> int:
     history = train(net, make_optimizer(tr), ds.X_train, ds.y_train, ds.X_val, ds.y_val,
                     settings=make_settings(tr), shuffle_seed=shuffle_ss, augment_seed=augment_ss)
     print(f"restored parameters from epoch {history['best_epoch']} (best {tr['selection_metric']})")
+
     val = evaluator.evaluate_classifier(net, ds.X_val, ds.y_val, ds.classes)
     reject_cfg, reject_val, reject_test, test = cfg["reject"], None, None, None
     if reject_cfg["enabled"]:
@@ -157,6 +160,7 @@ def main(argv=None) -> int:
     print("\n" + report)
     print(f"saved: {npz_path}, {json_path}, {run_dir}/ (log.json, report.md, {len(charts)} chart(s))")
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

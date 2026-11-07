@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""Prove that a release is internally consistent: the model weights, metadata, run log, report,
-charts and evaluation reports all describe ONE training run.
-
-    python tools/verify_release.py            # exit 0 = consistent, 1 = problems listed
-    python tools/verify_release.py --root DIR
-
-Checks: npz hash vs metadata; run directory exists and its log/report/charts carry the same run id;
-log accuracy/latency equal the metadata's; the report text shows the same numbers; the config that
-trained the model equals configs/default.json; OOD and pipeline reports are bound to the same npz
-hash; no leftover runs, candidates, registry or user samples (strict); MNIST files match pinned hashes.
-"""
 
 from __future__ import annotations
 
@@ -140,7 +129,8 @@ def verify(root: Path, name: str = "synapse_v1", strict: bool = True) -> list[st
 
 
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(description="Check that weights, metadata, run log, report, charts and evaluations describe one run.", epilog="exit code 0 means consistent, 1 means the problems were listed",
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--root", default=str(ROOT))
     ap.add_argument("--name", default="synapse_v1")
     ap.add_argument("--lenient", action="store_true", help="do not fail on leftover runs/candidates")
@@ -158,4 +148,3 @@ def main(argv=None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

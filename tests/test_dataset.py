@@ -50,7 +50,7 @@ class TestIdx(unittest.TestCase):
         for name in ("bad_magic.gz", "bad_dtype.gz"):
             with self.assertRaises(ValueError, msg=name):
                 read_idx(self.dir / name)
-        with gzip.open(self.dir / "truncated.gz", "wb") as f:     # header claims 12 bytes, has 4
+        with gzip.open(self.dir / "truncated.gz", "wb") as f:
             f.write(b"\x00\x00\x08\x02" + struct.pack(">II", 3, 4) + b"\x01\x02\x03\x04")
         with self.assertRaises(ValueError):
             read_idx(self.dir / "truncated.gz")

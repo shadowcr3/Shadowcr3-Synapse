@@ -35,9 +35,14 @@ validation digits; digit 0 is used only to measure rejection, not to set it.
 
 `ModelStore` keeps the release model and candidates (`models/candidates/<id>`), the active id and a rollback history in `models/registry.json`
 (atomic writes). `/predict` reads the active `Predictor` through one reference, so promotion is an atomic swap. A candidate is promoted only if
-(a) it was evaluated on the same validation split, (b) its validation accuracy is within 0.003 of the active model's or better, and (c) accuracy on
-the user's held-out drawings did not get worse. Fine-tuning mixes the user's drawings (augmented, repeated up to 20x) with a replay of MNIST so the
+(a) it was evaluated on the same validation split, (b) its validation accuracy is within 0.003 of the active model's or better, and, for fine-tuned
+candidates, (c) a meaningful held-out check of the user's own drawings is recorded in the candidate's metadata and shows no regression, and (d) the candidate
+was fine-tuned from the model that is active now. The held-out evidence lives in the metadata, so promoting from the Model page applies the same gate as the job. Fine-tuning mixes the user's drawings (augmented, repeated up to 20x) with a replay of MNIST so the
 network does not forget; before/after accuracy on MNIST validation and on held-out drawings is reported.
+
+The held-out drawings come from a deterministic, stratified split (`app/feedback.py:holdout_mask`): per digit, the drawings are ordered by the hash of their id and the first
+25% (at least one, never all) are held back, so the split does not depend on insertion order and a held-back drawing stays held back as more are added. Fine-tuning is refused
+unless there are at least 30 drawings and the held-back set has at least 8 drawings over at least 4 digits.
 
 ## Jobs
 
@@ -47,5 +52,5 @@ One worker thread, event ring buffer, cooperative cancellation through trainer h
 ## Known design limits
 
 - The reject rule is max-softmax confidence. It is not an out-of-distribution detector for letters and symbols (see `experiments/ood_eval.md`).
-- The server is unauthenticated by design; it is a local tool. Training state is in memory; a restart loses the live event log (models and drawings persist).
+- The server is unauthenticated and has no TLS by design; it is a local tool with per-client rate limiting. Authentication and TLS belong in a reverse proxy. Training state is in memory; a restart loses the live event log (models and drawings persist).
 - Dropout, batch-norm and convolutions are out of scope.

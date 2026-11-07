@@ -8,7 +8,15 @@
     python -m app.server --read-only       # inference only
     python -m app.server --dev             # Flask development server
 
-Options: `--model-dir`, `--model-name`, `--host`, `--port`, `--max-job-seconds`. Exit code 1 and a clear message if the model fails to load or verify.
+Options: `--model-dir`, `--model-name`, `--host`, `--port`, `--max-job-seconds`, `--read-only`, `--no-rate-limit`, `--trust-proxy N` (only behind N proxies you control). Exit code 1 and a clear message if the model fails to load or verify.
+
+## Fine-tuning on your drawings
+
+Save drawings on the Draw page (pick the true digit, then Save). Fine-tuning unlocks at 30 drawings, with at least 8 held back for checking across at least 4 digits, so save a few of each digit, ideally 5 or more. The held-back drawings are never trained on and decide whether the result is accepted.
+
+## Tested versions
+
+Python 3.12, NumPy 2.4.4, Flask 3.1.3, waitress, matplotlib 3.10.8; Node 22 with jsdom 27 and canvas 3 for the UI test.
 
 ## State on disk
 

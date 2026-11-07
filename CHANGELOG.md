@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0
+
+- UI redesigned from scratch as a lab notebook: paper, ink and a serif, numbered figures with captions, fill-in-the-line forms, ledger tables. The network figure encodes signal as dot area with curved pen-line connections, isolates a hovered unit's strongest connections in both signal and error views, and labels the digit you drew.
+- Rate limiting per client (infer / read / write / job / static buckets, 429 with Retry-After, X-Forwarded-For ignored unless `--trust-proxy`).
+- Fine-tuning: the held-out set of your own drawings is now a deterministic, stratified split and is required. Fine-tuning needs at least 30 drawings with at least 8 held back over at least 4 digits (before, 5 to 9 drawings trained on everything with no independent check).
+- Promotion gate: fine-tuned candidates carry their held-out evidence in their metadata, so promoting from the Model page applies the same check as the job; they must also descend from the active model.
+- All comments and docstrings removed from the code (behaviour verified unchanged: identical syntax trees apart from docstrings, full test suite).
+- The release ZIP is named after the app version (`app/version.py`), not the model version.
+
 ## 1.0.0
 
 First complete release.

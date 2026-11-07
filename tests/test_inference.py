@@ -27,7 +27,7 @@ class TestPredictor(unittest.TestCase):
         out = self.p.predict(parse_pixels({"pixels": class_pixels(4)}))
         self.assertEqual(out["digits"], list(range(1, 10)))
         self.assertAlmostEqual(sum(out["scores"]), 1.0, places=5)
-        self.assertEqual(out["top_guess"], 5)                 # class index 4 -> digit 5
+        self.assertEqual(out["top_guess"], 5)
         self.assertEqual(out["status"], "ok"); self.assertEqual(out["digit"], 5)
         self.assertGreater(out["confidence"], out["threshold"])
         self.assertGreaterEqual(out["processing_ms"], 0)

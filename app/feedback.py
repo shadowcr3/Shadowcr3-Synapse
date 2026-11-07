@@ -1,9 +1,3 @@
-"""Local store of user-labelled drawings used to fine-tune the model.
-
-Append-only JSON Lines (one sample per line), process-local lock, fsync on write, 0600 file
-mode. Samples are the exact 28x28 pixels the model saw (already validated like /predict input)
-plus a digit label 1-9. Duplicates are ignored. Nothing here ever leaves the machine.
-"""
 
 from __future__ import annotations
 
@@ -22,6 +16,10 @@ from .preprocessing import N_PIXELS
 
 log = logging.getLogger("synapse.feedback")
 MAX_SAMPLES = 20_000
+HOLDOUT_FRACTION = 0.25
+MIN_TOTAL = 30
+MIN_HOLDOUT = 8
+MIN_HOLDOUT_DIGITS = 4
 
 
 class FeedbackError(ValueError):
@@ -88,10 +86,10 @@ class FeedbackStore:
         per = {str(d): 0 for d in self.digits}
         for r in rows:
             per[str(r["label"])] += 1
-        return {"total": len(rows), "per_digit": per, "max_samples": self.max_samples}
+        return {"total": len(rows), "per_digit": per, "max_samples": self.max_samples,
+                "readiness": readiness([r["id"] for r in rows], [r["label"] for r in rows])}
 
     def arrays(self, classes):
-        """(X uint8 (N, 784), y class indices (N,), ids). `classes` maps index -> digit."""
         index = {int(c): i for i, c in enumerate(classes)}
         with self._lock:
             rows = [r for r in self._read() if r["label"] in index]
@@ -126,3 +124,34 @@ class FeedbackStore:
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp, self.path)
+
+
+def holdout_mask(ids, labels, fraction: float = HOLDOUT_FRACTION):
+    labels = np.asarray(labels)
+    mask = np.zeros(len(labels), dtype=bool)
+    for label in np.unique(labels):
+        idx = np.flatnonzero(labels == label)
+        if len(idx) < 2:
+            continue
+        order = sorted(idx, key=lambda i: hashlib.sha256(ids[i].encode("ascii")).hexdigest())
+        k = min(len(idx) - 1, max(1, int(round(fraction * len(idx)))))
+        mask[order[:k]] = True
+    return mask
+
+
+def readiness(ids, labels) -> dict:
+    labels = np.asarray(labels)
+    total = len(labels)
+    mask = holdout_mask(ids, labels) if total else np.zeros(0, dtype=bool)
+    held = int(mask.sum())
+    digits = int(len(np.unique(labels[mask]))) if held else 0
+    reasons = []
+    if total < MIN_TOTAL:
+        reasons.append(f"you have {total} saved drawings; at least {MIN_TOTAL} are needed")
+    if held < MIN_HOLDOUT:
+        reasons.append(f"only {held} drawings would be held back for checking; at least {MIN_HOLDOUT} are needed (save at least two of most digits)")
+    if digits < MIN_HOLDOUT_DIGITS:
+        reasons.append(f"the held-back drawings cover {digits} digits; at least {MIN_HOLDOUT_DIGITS} are needed")
+    return {"total": total, "train": total - held, "holdout": held, "holdout_digits": digits,
+            "ready": not reasons, "reasons": reasons,
+            "need": {"total": MIN_TOTAL, "holdout": MIN_HOLDOUT, "holdout_digits": MIN_HOLDOUT_DIGITS}}

@@ -1,8 +1,3 @@
-"""Mini-batch training loop. Has no access to the test set by construction.
-
-Observability hooks (`TrainerHooks`) let a caller stream progress, inspect gradients and
-cancel a run without the loop knowing anything about who is listening.
-"""
 
 from __future__ import annotations
 
@@ -23,9 +18,7 @@ from .evaluator import evaluate_loss_accuracy
 
 
 class TrainerHooks:
-    """Override any subset. All methods run on the training thread."""
-
-    report_every = 25          # steps between on_batch calls
+    report_every = 25
 
     def on_batch(self, info: dict) -> None: ...
     def on_epoch(self, info: dict) -> None: ...
@@ -38,17 +31,15 @@ class TrainSettings:
     epochs: int
     batch_size: int
     learning_rate: float
-    lr_schedule: str = "constant"        # "constant" | "cosine"
-    lr_min_factor: float = 0.05          # cosine floor as a fraction of learning_rate
-    selection_metric: str = "val_loss"   # checkpoint criterion: "val_loss" | "val_acc"
-    patience: int = 0                    # epochs without improvement before stopping; 0 = off
+    lr_schedule: str = "constant"
+    lr_min_factor: float = 0.05
+    selection_metric: str = "val_loss"
+    patience: int = 0
     augment: AugmentConfig = AugmentConfig()
-    prefetch: bool = True                # build augmented batches on a helper thread
+    prefetch: bool = True
 
 
 def _batches(X, y, order, batch_size, dtype, rng, augment, prefetch):
-    """Yield (xb, yb). With prefetch, a single producer keeps the RNG stream ordered, so
-    results are identical with or without it (and independent of thread timing)."""
     def produce():
         for start in range(0, len(order), batch_size):
             idx = order[start:start + batch_size]
@@ -75,7 +66,7 @@ def _batches(X, y, order, batch_size, dtype, rng, augment, prefetch):
                 if stop.is_set():
                     return
             q.put(DONE)
-        except BaseException as exc:      # surface producer failures on the training thread
+        except BaseException as exc:
             q.put(exc)
 
     t = threading.Thread(target=worker, daemon=True)
@@ -103,8 +94,6 @@ def _lr_at(settings: TrainSettings, step: int, total: int) -> float:
 
 def train(network, optimizer, X_train, y_train, X_val, y_val, *, settings: TrainSettings,
           shuffle_seed, augment_seed=None, hooks: TrainerHooks | None = None, log=print) -> dict:
-    """Train; restore the parameters of the best epoch by `settings.selection_metric`.
-    Returns the per-epoch history."""
     hooks = hooks or TrainerHooks()
     rng = np.random.default_rng(shuffle_seed)
     aug_rng = np.random.default_rng(augment_seed if augment_seed is not None else shuffle_seed)
