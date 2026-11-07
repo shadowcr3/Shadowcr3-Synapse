@@ -3,7 +3,7 @@
 A handwritten-digit (1-9) recogniser whose neural network is implemented **from scratch in NumPy** (no PyTorch/TensorFlow/Keras), wrapped in an offline web app that
 shows the network thinking, lets you train it, and lets it learn from your own drawings.
 
-![status](https://img.shields.io/badge/status-release%201.0.0-blue)
+![status](https://img.shields.io/badge/status-release%201.1.0-blue)
 
 ## Quick start
 
@@ -50,7 +50,7 @@ rejection of non-digit input is **not universal** (`experiments/ood_eval.md`: le
 
 ## Docs
 
-`docs/API.md`, `docs/TRD.md`, `docs/SECURITY.md`, `docs/OPERATIONS.md`, `docs/MATHEMATICS.md`, `docs/PERFORMANCE.md`, `docs/RULES.md`, `docs/PRD.md`.
+`docs/API.md`, `docs/SECURITY.md`, `docs/OPERATIONS.md`, `docs/MATHEMATICS.md`, `docs/PERFORMANCE.md`.
 
 ## License
 
